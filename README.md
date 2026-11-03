@@ -180,22 +180,54 @@ Der Smoke-Test prüft die bekannten Regressionssätze in `01.wav` (Licht im
 Wohnzimmer) und `03.wav` (Temperatur auf zweiundzwanzig Grad). Er ist kein
 allgemeines WAV-Transkriptionswerkzeug. Testaufnahmen werden nicht mitgeliefert.
 
-## Referenzleistung
+## Empfohlene Streaming- und Decoding-Einstellungen
 
-Die folgenden Werte stammen aus eigenen Kontrollmessungen auf einem Intel N100
-mit einem Inferenz-Thread und sind keine Leistungsgarantie. Hardware, Audio,
-Threading und Build-Konfiguration beeinflussen die Ergebnisse. RTF bezeichnet
-das Verhältnis von Inferenzzeit zu Audiodauer.
+Für **Kroko Classic** empfehlen wir auf dem **Intel N100, CPU only**:
+**Greedy decoding + 20-ms input chunks + 1 CPU thread** (`NUM_THREADS=1`).
+Der Server verwendet bereits Greedy; die Audioblockgröße bestimmt der sendende
+Client. Diese Empfehlung führt keine neue Serveroption oder Beam-Konfiguration ein.
 
-| Modell | RTF | RSS nach dem Start |
-| --- | --- | --- |
-| classic | ~0.06–0.07 | ~131–133 MiB |
-| community-64 | ~0.082 | ~246 MiB |
-| community-128 | ~0.122 | ~245 MiB |
+**20 ms ist die Größe der übergebenen Audioblöcke, nicht die interne
+Modell-Schrittweite.** Classic besitzt eine feste interne Encoder-Schrittweite
+von **1,28 s**. Größere 320-ms-Eingabeblöcke erweitern den Modellkontext nicht.
+Modified Beam Search brachte im abgeschlossenen Vergleich keinen Genauigkeitsgewinn.
 
-Für den Intel N100 ist `classic` derzeit unsere empfohlene Variante. Die kurzen
-Kontrolltests belegen keine generelle Überlegenheit bei beliebiger Spracheingabe
-und garantieren keine fehlerfreie Befehlserkennung.
+## Kroko-Classic-Decoding-Benchmark
+
+Am 3. November 2026 wurden dieselben 100 deutschen FLEURS-Aufnahmen pro Variante
+und Betriebsart dreimal getestet: **2.400 Messungen, keine Fehler, keine Timeouts**.
+Datei-Inferenz und simuliertes Echtzeit-Streaming wurden getrennt und seriell in
+einer isolierten Benchmark-Umgebung gemessen.
+
+| Variante | WER | CER | Median RTF | P95 RTF | Peak RAM | First stable 3-word partial, Median / P95 | Final latency, Median / P95 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Greedy 20 ms | **7,85 %** | **4,57 %** | **0,0719** | 0,1243 | 178,7 MiB | 4,073 / 7,913 s | **75,7 / 148,2 ms** |
+| Greedy 320 ms | 7,85 % | 4,57 % | 0,0733 | **0,1177** | 181,3 MiB | 4,235 / 8,075 s | 77,4 / 154,6 ms |
+| Beam 4, 20 ms | 7,98 % | 4,64 % | 0,0778 | 0,1312 | 182,1 MiB | 4,078 / 7,919 s | 81,8 / 160,8 ms |
+| Beam 8, 20 ms | 7,98 % | 4,62 % | 0,0805 | 0,1351 | 185,4 MiB | 4,085 / 7,933 s | 89,0 / 179,4 ms |
+
+**„First stable 3-word partial“ bedeutet: drei vollständige Anfangswörter waren
+erkannt und blieben danach unverändert. Die rund vier Sekunden sind ausdrücklich
+nicht die Zeit bis zur ersten Erkennung oder zum ersten nichtleeren Teilergebnis.**
+Die Metrik wird rückblickend anhand aller späteren Hypothesen bestimmt.
+
+RTF stammt aus Datei-Inferenz; die Latenzen stammen aus separat zeitlich gepacetem
+Streaming. Final latency beginnt bei der tatsächlichen Übergabe des letzten
+Audioblocks und enthält keine Home-Assistant-, Netzwerk- oder VAD-Latenz.
+Peak RAM ist der höchste Prozess-RSS aus beiden Betriebsarten, einschließlich des
+Python/C-API-Benchmark-Adapters; er ist kein Speicherwert des Rust-Containers.
+
+Beam 4 erhöht die Median-RTF um **8,23 %**, Beam 8 um **11,99 %** gegenüber
+Greedy 20 ms, jeweils bei **7,98 % statt 7,85 % WER**. Anfragen mit Revisionen
+vollständiger Wörter: Greedy **0/300**, Beam 4 **3/300**, Beam 8 **9/300**.
+320-ms-Blöcke liefern identische WER/CER, aber rund **161 ms spätere stabile
+Partials** und damit keinen praktischen Vorteil für die empfohlene interaktive
+Nutzung. Ihr etwas besserer P95-Datei-RTF ist in der Tabelle sichtbar.
+
+Methodik, Metrikdefinitionen, CPU-Werte, Vergleichsgrenzen und Reproduzierbarkeit:
+[docs/benchmark-classic-decoding.md](docs/benchmark-classic-decoding.md).
+Die Ergebnisse sind keine Leistungsgarantie und der FLEURS-Korpus ist kein
+spezifischer Home-Assistant-Befehlskorpus.
 
 ## Lizenzierung
 
