@@ -1,6 +1,7 @@
 # Licensing and redistribution review
 
-Reviewed 2026-10-05. This document separates original source code, dependencies,
+Initial review 2026-10-05; model-manager attribution updated 2026-11-04.
+This document separates original source code, dependencies,
 model weights and compiled artifacts. It is not a legal clearance for publication.
 
 ## Original project source
@@ -78,6 +79,19 @@ source-code license.
 
 ## Kroko / Banafo models
 
+### Kroko Community model attribution
+
+* **Model:** `Kroko-DE-Community-128-L-Streaming-001.data`
+* **Author / Provider:** Banafo / Kroko ASR
+* **Source:** [Banafo/Kroko-ASR on Hugging Face](https://huggingface.co/Banafo/Kroko-ASR)
+* **Model license:** CC-BY-SA (version not specified by upstream)
+
+The model weights are not included in this project or Docker image.
+When automatic model installation is enabled, the model is downloaded
+directly from the upstream provider and verified using a pinned SHA256.
+
+### Model-license review
+
 No weights, vocabularies or archives are included. Hashes and model identifiers
 identify independently obtained external files and do not grant model rights.
 
@@ -116,3 +130,20 @@ No mandatory GPL-only Rust dependency was found in the locked package inventory.
 Build-only and other-target crates are listed for transparency, not asserted to
 be linked into the final linux/amd64 server. Consult exact crate license files,
 not only SPDX metadata, when assembling distribution notices.
+
+## Local-first model manager
+
+The new manager downloads missing Community packages directly from the pinned
+Banafo repository, as explicitly selected by the user/default new-install profile.
+It retains the original package and records source, revision, checksum and the
+provider's CC-BY-SA statement without assigning an unverified CC version.
+Classic and Custom models remain local-only. This changes installation behavior,
+not the unresolved parts of the model-license assessment above. No weights are
+added to images, Git repositories or release assets.
+
+The HTTPS client ureq 2.12.1 and its rustls/webpki/ring chain were already locked
+build dependencies; they are now also used by the installer at runtime. Their
+permissive license notices continue to be collected by the existing image license
+step. No new Rust package version or additional native inference library is
+introduced. Dependency inventories include these packages already; linkage role
+must be considered when reviewing the new image before any future publication.

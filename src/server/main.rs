@@ -1,4 +1,7 @@
 mod models;
+// The shared module also provides CLI-only commands.
+#[allow(dead_code)]
+mod model_manager;
 mod asr;
 mod config;
 mod wyoming;
@@ -15,7 +18,7 @@ struct ClientSlot;
 impl Drop for ClientSlot {fn drop(&mut self){CLIENTS.fetch_sub(1,Ordering::SeqCst);}}
 
 fn info(config:&Config)->Value {
-    json!({"asr":[{"name":PROGRAM_NAME,"description":"Local German streaming ASR in Rust; client audio-stop required","attribution":{"name":"Local Rust/sherpa-onnx prototype","url":"https://github.com/k2-fsa/sherpa-onnx"},"installed":true,"version":env!("CARGO_PKG_VERSION"),"supports_transcript_streaming":false,"requires_external_vad":true,"models":[{"name":MODEL_NAME,"description":format!("Pinned Kroko German Zipformer2 ({}), local test only; redistribution license unresolved",config.model.key()),"attribution":{"name":"Banafo / Kroko-ASR","url":"https://huggingface.co/Banafo/Kroko-ASR"},"installed":true,"version":config.model.revision(),"languages":["de","de-DE"]}]}]})
+    json!({"asr":[{"name":PROGRAM_NAME,"description":"Local German streaming ASR in Rust; client audio-stop required","attribution":{"name":"Local Rust/sherpa-onnx prototype","url":"https://github.com/k2-fsa/sherpa-onnx"},"installed":true,"version":env!("CARGO_PKG_VERSION"),"supports_transcript_streaming":false,"requires_external_vad":true,"models":[{"name":MODEL_NAME,"description":format!("German streaming model ({})",config.model.key()),"attribution":{"name":"Banafo / Kroko-ASR","url":"https://huggingface.co/Banafo/Kroko-ASR"},"installed":true,"version":config.model.revision(),"languages":["de","de-DE"]}]}]})
 }
 fn reject(stream:&mut TcpStream,code:&str,text:&str)->io::Result<()> { wyoming::error(stream,code,text) }
 fn handle(mut socket:TcpStream, engine:&Mutex<Engine>, config:&Config)->io::Result<()> {

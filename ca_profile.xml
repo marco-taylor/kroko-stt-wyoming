@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CommunityApplications>
-  <Profile>Kroko STT German Wyoming: lokale deutsche Streaming-Spracherkennung fuer Home Assistant mit Rust, sherpa-onnx und Wyoming. CPU-only, linux/amd64. Modellgewichte werden nicht mitgeliefert und muessen vor der Installation separat anhand der Modellanleitung vorbereitet werden. Modelllizenzen gelten unabhaengig vom Apache-2.0-Projektcode. Kein automatischer Modelldownload.</Profile>
+  <Profile>Kroko STT German Wyoming: lokale deutsche Streaming-Spracherkennung fuer Home Assistant. CPU-only, linux/amd64. Ab v0.2.0: Community-128 automatisch vom Originalanbieter, nur wenn lokal nicht vorhanden. Persistenter schreibbarer Modell-Mount; vorhandene Modelle bleiben erhalten. Classic und Custom bleiben lokal-only. Modelllizenzen gelten unabhaengig vom Apache-2.0-Projektcode. Bestehende Classic-Konfigurationen behalten ihr Modell.</Profile>
   <Icon>https://raw.githubusercontent.com/marco-taylor/kroko-stt-german-wyoming/main/icons/kroko-stt-german-wyoming.png</Icon>
   <WebPage>https://github.com/marco-taylor/kroko-stt-german-wyoming</WebPage>
   <Forum>https://github.com/marco-taylor/kroko-stt-german-wyoming/issues</Forum>

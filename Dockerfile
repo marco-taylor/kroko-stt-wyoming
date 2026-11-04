@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends cmake ninja-bui
 COPY Cargo.toml Cargo.lock ./
 COPY src/server ./src/server
 COPY src/bin/wyoming-probe.rs ./src/bin/wyoming-probe.rs
+COPY src/bin/model-manager.rs ./src/bin/model-manager.rs
 RUN cargo test --locked && cargo build --release --locked --bins
 COPY scripts/collect-licenses.sh /opt/collect-licenses.sh
 RUN sh /opt/collect-licenses.sh \
@@ -30,9 +31,10 @@ FROM gcr.io/distroless/cc-debian12@sha256:777e96cf322c46bc32aca926c263624c4dc8d7
 ARG VCS_REF=uncommitted
 LABEL org.opencontainers.image.source="https://github.com/marco-taylor/kroko-stt-german-wyoming" \
       org.opencontainers.image.title="Kroko STT German Wyoming" \
-      org.opencontainers.image.version="0.1.0" \
+      org.opencontainers.image.version="0.2.0" \
       org.opencontainers.image.revision=$VCS_REF
 COPY --from=build /build/target/release/kroko-wyoming /usr/local/bin/kroko-wyoming
+COPY --from=build /build/target/release/model-manager /usr/local/bin/model-manager
 COPY --from=build /build/target/release/wyoming-probe /usr/local/bin/wyoming-probe
 COPY --from=build /opt/runtime-libs/ /usr/local/lib/kroko/
 COPY --from=build /opt/distribution-licenses/ /usr/share/licenses/kroko/dependencies/
@@ -40,7 +42,7 @@ COPY --from=build /usr/share/zoneinfo/Europe/Berlin /usr/share/zoneinfo/Europe/B
 COPY LICENSE NOTICE /usr/share/licenses/kroko/
 COPY docs/licensing.md docs/dependency-licenses.md /usr/share/licenses/kroko/
 USER 99:100
-ENV LD_LIBRARY_PATH=/usr/local/lib/kroko KROKO_MODEL=classic MODEL_DIR=/models HOST=0.0.0.0 PORT=10321 NUM_THREADS=1 LANGUAGE=de LOG_LEVEL=info TZ=Europe/Berlin
+ENV LD_LIBRARY_PATH=/usr/local/lib/kroko MODEL_DIR=/models MODEL_AUTO_DOWNLOAD=true HOST=0.0.0.0 PORT=10321 NUM_THREADS=1 LANGUAGE=de LOG_LEVEL=info TZ=Europe/Berlin
 EXPOSE 10321
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 CMD ["/usr/local/bin/wyoming-probe"]
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30m --retries=3 CMD ["/usr/local/bin/wyoming-probe"]
 ENTRYPOINT ["/usr/local/bin/kroko-wyoming"]

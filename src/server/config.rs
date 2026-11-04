@@ -6,7 +6,8 @@ pub const PROGRAM_NAME: &str = "kroko";
 
 #[derive(Clone)]
 pub struct Config {
-    pub model_dir: PathBuf,
+    pub model_root: PathBuf,
+    pub auto_download: bool,
     pub model: Model,
     pub host: String,
     pub port: u16,
@@ -17,9 +18,14 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Result<Self, String> {
         let value = |name: &str, default: &str| env::var(name).unwrap_or_else(|_| default.into());
-        let model = Model::parse(&value("KROKO_MODEL", "classic"))?;
+        let model_root=PathBuf::from(value("MODEL_DIR", "models"));
+        let kroko=env::var("KROKO_MODEL").ok(); let alias=env::var("MODEL").ok();
+        if kroko.is_some() && alias.is_some() && kroko!=alias {return Err("KROKO_MODEL and MODEL conflict; set only one".into());}
+        let model=crate::model_manager::selection(&model_root,kroko.as_deref().or(alias.as_deref()))?;
+        let auto_download=match value("MODEL_AUTO_DOWNLOAD","true").as_str(){"true"=>true,"false"=>false,_=>return Err("MODEL_AUTO_DOWNLOAD must be true or false".into())};
         let config = Self {
-            model_dir: PathBuf::from(value("MODEL_DIR", "models")).join(model.key()),
+            model_root,
+            auto_download,
             model,
             host: value("HOST", "127.0.0.1"),
             port: value("PORT", "10300").parse().map_err(|_| "PORT must be 1..65535")?,

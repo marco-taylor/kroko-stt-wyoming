@@ -10,7 +10,7 @@ Wyoming protocol and Home Assistant contributors.
 These acknowledgements imply no affiliation or endorsement.
 No model weights are included.
 
-Native build configuration for the v0.1.0 candidate:
+Native build configuration for v0.2.0 (unchanged from v0.1.0):
 sherpa-onnx 1.13.8, with TTS and speaker diarization disabled.
 The official Rust shared-library feature is used. eSpeak NG, Piper phonemize
 and ucd-tools are not required by Kroko ASR and are excluded from this build.

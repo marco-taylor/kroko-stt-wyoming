@@ -1,8 +1,7 @@
 use crate::config::Config;
 use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 use sherpa_onnx::{OnlineRecognizer, OnlineRecognizerConfig, OnlineStream};
-use std::{fs::File, io::Read, sync::MutexGuard, time::Instant};
+use std::{sync::MutexGuard, time::Instant};
 
 pub fn log(config: &Config, level: &str, event: Value) {
     if config.enabled(level) { eprintln!("{event}"); }
@@ -18,32 +17,27 @@ pub fn cpu_s() -> f64 {
 pub fn rss_kib() -> Option<u64> {
     std::fs::read_to_string("/proc/self/status").ok()?.lines().find(|l| l.starts_with("VmRSS:"))?.split_whitespace().nth(1)?.parse().ok()
 }
-pub struct Engine { pub recognizer: OnlineRecognizer }
+pub struct Engine { pub recognizer: OnlineRecognizer, tail_samples: usize, _model_lease: crate::model_manager::Lease }
 impl Engine {
     pub fn load(config: &Config) -> Result<Self, String> {
         eprintln!("Kroko model: {}", config.model.key());
-        let files = ["encoder.onnx","decoder.onnx","joiner.onnx","tokens.txt"].into_iter().zip(config.model.hashes());
-        for (name, expected) in files {
-            let path = config.model_dir.join(name);
-            let mut file = File::open(&path).map_err(|e| format!("Cannot read required model file {}: {e}", path.display()))?;
-            let mut hash = Sha256::new(); let mut block = [0u8;65536];
-            loop { let n = file.read(&mut block).map_err(|e| e.to_string())?; if n==0 { break; } hash.update(&block[..n]); }
-            let actual = format!("{:x}",hash.finalize());
-            if actual != expected { return Err(format!("SHA256 mismatch for {}: expected {expected}, got {actual}; only the selected pinned model profile is allowed",path.display())); }
-        }
-        let path = |name| config.model_dir.join(name).to_str().map(str::to_owned).ok_or_else(|| "MODEL_DIR must be valid UTF-8".to_string());
+        let prepared=crate::model_manager::prepare(&config.model_root,&config.model,config.auto_download)?;
+        let path = |role: &str| -> Result<String,String> {
+            let f=prepared.manifest.files.iter().find(|f|f.role==role).ok_or_else(||format!("Missing model role {role}"))?;
+            prepared.directory.join(&f.path).to_str().map(str::to_owned).ok_or_else(||"Model path must be UTF-8".into())
+        };
         let mut c = OnlineRecognizerConfig::default();
-        c.model_config.transducer.encoder = Some(path("encoder.onnx")?);
-        c.model_config.transducer.decoder = Some(path("decoder.onnx")?);
-        c.model_config.transducer.joiner = Some(path("joiner.onnx")?);
-        c.model_config.tokens = Some(path("tokens.txt")?);
+        c.model_config.transducer.encoder = Some(path("encoder")?);
+        c.model_config.transducer.decoder = Some(path("decoder")?);
+        c.model_config.transducer.joiner = Some(path("joiner")?);
+        c.model_config.tokens = Some(path("tokens")?);
         c.model_config.provider = Some("cpu".into()); c.model_config.num_threads = config.num_threads;
         c.feat_config.sample_rate = 16000; c.feat_config.feature_dim = 80;
         c.decoding_method = Some("greedy_search".into()); c.enable_endpoint = false;
         let start = Instant::now();
         let recognizer = OnlineRecognizer::create(&c).ok_or_else(|| "Cannot create Kroko OnlineRecognizer; see native diagnostics".to_string())?;
-        log(config,"info",json!({"event":"model_loaded","load_s":start.elapsed().as_secs_f64(),"rss_kib":rss_kib(),"threads":config.num_threads,"sherpa_version":sherpa_onnx::version(),"onnxruntime_version":sherpa_onnx::onnxruntime_version(),"model":config.model.key(),"model_dir":config.model_dir,"revision":config.model.revision()}));
-        Ok(Self { recognizer })
+        log(config,"info",json!({"event":"model_loaded","load_s":start.elapsed().as_secs_f64(),"rss_kib":rss_kib(),"threads":config.num_threads,"sherpa_version":sherpa_onnx::version(),"onnxruntime_version":sherpa_onnx::onnxruntime_version(),"model":config.model.key(),"model_dir":prepared.directory,"revision":prepared.manifest.version}));
+        Ok(Self { recognizer, tail_samples:prepared.manifest.tail_samples, _model_lease:prepared.lease })
     }
 }
 // Stream must be dropped before the guard releases exclusive recognizer access.
@@ -104,7 +98,7 @@ impl<'a> Session<'a> {
         if self.pending_byte.is_some() { return Err("Incomplete PCM16 sample at audio-stop".into()); }
         let finish=Instant::now();
         // Same context-safe zero tail as Phase 1D; no sleep or offline re-recognition.
-        for block in vec![0.0f32;config.model.tail_samples()].chunks(320) { self.stream.accept_waveform(16000,block); self.drain(config,true); }
+        for block in vec![0.0f32;self.engine.tail_samples].chunks(320) { self.stream.accept_waveform(16000,block); self.drain(config,true); }
         self.stream.input_finished(); self.drain(config,true);
         let result=self.engine.recognizer.get_result(&self.stream).ok_or_else(||"No final ASR result".to_string())?;
         self.finished=true;

@@ -1,145 +1,266 @@
-# External, pinned models
+# Modelle installieren und verwalten
 
-Use only artifacts whose four SHA256 values match [src/server/models.rs](../src/server/models.rs).
-The directory names are profiles; `MODEL_DIR` is their parent. The loader does
-not download models, extract archives, or automatically upgrade exports.
+## Community-128 automatisch
 
-Classic original source:
-https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06/tree/887db3d083240198c2d2b99fb66cfcfe6948ced8
+Für eine Neuinstallation **Community-128 auswählen**, einen persistenten Appdata-
+Modellordner nach `/models` **schreibbar** einbinden und den Container starten.
+Fehlt das Modell, lädt der Rust Model Manager das offizielle Banafo-Paket,
+prüft die feste SHA256 und bereitet es einmalig für sherpa-onnx vor.
+Danach startet Wyoming. Beim nächsten Start wird das vorhandene Modell geprüft
+und ohne Download verwendet. Es werden keine Gewichte im Image ausgeliefert.
 
-## Classic für eine frische Unraid-Installation vorbereiten
+Diese Anleitung beschreibt v0.2.0. Das öffentliche Image ist unter
+`ghcr.io/marco-taylor/kroko-stt-german-wyoming:0.2.0` sowie `:latest` verfügbar.
+Eine bestehende v0.1.0-Installation erhält die neue Funktion durch ein
+Image-Update mit beibehaltener Konfiguration, nicht durch einen bloßen Neustart.
 
-**Vor dem ersten Containerstart ausfuehren.** Es gibt keinen automatischen
-Modelldownload. Die Lizenz der Gewichte ist unabhaengig von Apache-2.0; fuer
-Classic wird keine freie Weiterverteilungsfreigabe behauptet. Du musst die
-Bedingungen der Originalquelle vor dem Download prüfen und akzeptieren.
-Bei unklaren Nutzungsrechten hole eine Klärung vom Rechteinhaber ein. Die Befehle
-laden nur fuer deinen eigenen lokalen Modellordner direkt von der gepinnten
-Upstream-Quelle; das Projekt liefert keine Gewichte aus.
+Community-128 erreichte im separaten 100-Aufnahmen-/Drei-Wiederholungen-Vergleich
+7,28 % WER, Classic 7,85 %. Der kleine Punktwertvorteil ist keine Garantie für
+andere Aufnahmen; Community-128 benötigt mehr CPU/RAM und besitzt einen internen
+Schritt von 2,56 s statt 1,28 s. Das ist der bewusst gewählte Qualitätsstandard
+für **Neuinstallationen**, kein automatischer Wechsel vorhandener Classic-Nutzer.
 
-Die Dateien in dieser Revision heissen bereits encoder.onnx, decoder.onnx,
-joiner.onnx und tokens.txt. Kein Archiv, Konverter oder weiteres Runtime-Paket
-ist fuer Classic erforderlich. Folgende Befehle im Unraid-Terminal ausfuehren
-(benoetigt curl und sha256sum, beide auf dem getesteten Unraid vorhanden):
+## Auswahl und Verzeichnisse
 
-```sh
-(
-set -eu
-umask 022
-model_dir=/mnt/user/appdata/kroko-stt-german-wyoming/models/classic
-source_url=https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06/resolve/887db3d083240198c2d2b99fb66cfcfe6948ced8
-mkdir -p "$model_dir"
-# Vorhandene Dateien und Downloads niemals stillschweigend ersetzen.
-for file in encoder.onnx decoder.onnx joiner.onnx tokens.txt; do
-  for path in "$model_dir/$file" "$model_dir/$file.download"; do
-    if [ -e "$path" ] || [ -L "$path" ]; then
-      echo "Abbruch: Datei bereits vorhanden: $path" >&2
-      exit 1
-    fi
-  done
-done
-for file in encoder.onnx decoder.onnx joiner.onnx tokens.txt; do
-  curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
-    "$source_url/$file" -o "$model_dir/$file.download"
-done
-cd "$model_dir"
-sha256sum --check <<'SHA256'
-6e83993d6967ec7a3498b055b7e85ace85b5d64d1b1e8773cb29a43a11f5edb5  encoder.onnx.download
-94a29592b403c53fa2231b478637da1ab4abcef7f5e46e432098416a4a3ed562  decoder.onnx.download
-28356bff070aea51ab1d725a3278e81d19f9300f860d3248a7014292264df15a  joiner.onnx.download
-86e8370994ff2c01149ba8c4f8709aa93cdc18914b27a717e291e96faf39a6eb  tokens.txt.download
-SHA256
-for file in encoder.onnx decoder.onnx joiner.onnx tokens.txt; do
-  # Noclobber verhindert auch ein Überschreiben bei einem parallelen Download.
-  (set -C; cat "$file.download" > "$file")
-  chmod 644 "$file"
-  rm -- "$file.download"
-done
-chmod 755 "$model_dir" "$(dirname "$model_dir")"
-echo "Classic bereit: vier SHA256-Prüfungen erfolgreich; Modelle lesbar für UID 99 / GID 100."
-)
-```
-
-Alle vier Prüfungen müssen **OK** melden. `set -e` bricht bei einem Download-
-oder Prüfsummenfehler ab, bevor Dateien unter ihren Laufzeitnamen installiert werden.
-Die Klammern begrenzen die Shell-Einstellungen auf diesen Befehlsblock.
-Bei Fehlern nicht starten: .download-Dateien sind keine installierten Modelle.
-Der Block überschreibt keine vorhandenen Dateien. Nach einem abgebrochenen
-Versuch nur die selbst angelegten unvollständigen .download-Dateien prüfen,
-bevor du den Block erneut ausführst; vorhandene Modelle nicht blind löschen. Die Befehle
-koennen keine Lizenzrechte erteilen. Sie richten keine automatische
-Weiterverteilung ein. Falls vorhandene Elternordner den Zugriff verhindern,
-deren Durchsuchbarkeit für UID 99 / GID 100 gezielt prüfen; weder pauschal
-Appdata-Rechte ändern noch chmod 777 verwenden. Der Block setzt ausschließlich
-die beiden eingebundenen Modellordner auf 755 und die vier Dateien auf 644.
-Ein chown auf UID 99 / GID 100 ist dafür nicht nötig.
-
-Erwartete Struktur:
+`MODEL_DIR` bezeichnet weiterhin den übergeordneten Modellordner.
+`KROKO_MODEL` bleibt erhalten; alternativ ist `MODEL` möglich, beispielsweise
+`MODEL=custom/my-german-model`. Bei widersprüchlichen Werten startet der Server
+nicht. Ein Modellwechsel erfordert eine geänderte Containerkonfiguration,
+nicht nur `docker restart`.
 
 ```text
-/mnt/user/appdata/kroko-stt-german-wyoming/models/
-  classic/
+/models/
+  community-128/
+    Kroko-DE-Community-128-L-Streaming-001.data
     encoder.onnx
     decoder.onnx
     joiner.onnx
     tokens.txt
+    installation.json
+  community-64/
+  classic/
+  custom/
+    my-german-model/
+      model.json
+      encoder.onnx
+      decoder.onnx
+      joiner.onnx
+      tokens.txt
 ```
 
-Im Unraid-Template diesen uebergeordneten models-Ordner **read-only** nach
-/models mappen und KROKO_MODEL=classic belassen. Vor Apply einen freien
-Hostport auswaehlen; Container-Port bleibt 10321/tcp. Anschliessend auf healthy
-warten und Home Assistant manuell ueber Wyoming mit Unraid-IP und Hostport
-verbinden. Keine WebUI. Ein vorhandener Dienst darf nicht verdraengt werden.
+Ohne explizite Auswahl wird ein vorhandener Classic-Ordner zuerst erkannt, damit
+bestehende Installationen ihren bisherigen Standard behalten. Danach kommen
+vorhandenes Community-128 und Community-64. Ist nichts vorhanden, gilt
+Community-128. Auch unvollständiges Classic wird nicht durch einen stillen
+Download eines anderen Modells umgangen. Das neue Unraid-Template wählt
+Community-128 ausdrücklich; bestehende gespeicherte Templates mit
+`KROKO_MODEL=classic` behalten ihre Auswahl.
 
-Wenn du bereits die vier richtigen Dateien besitzt, ist kein Download noetig:
-am gewaehlten Ziel in classic/ bereitstellen und mit den vier obigen Hashes
-(ohne .download-Suffix) pruefen. Beim Umzug nie bestehende Dateien blind ersetzen.
-Bei fehlendem Ordner/Datei oder SHA256-Abweichung bricht der Dienst mit dem
-konkreten Pfad im Log ab. Modelle bleiben bei Container-/Image-Updates erhalten.
+## Was bei jedem Start passiert
 
-## Manuell vorbereitete Community-Alternativen
+1. Lokales Modell suchen, einschließlich unterstützter Classic-Legacypfade.
+2. Alle erforderlichen Dateien prüfen: vorhanden, regulär, nicht leer, erlaubte
+   Größe, bekannte SHA256; zusätzlich ONNX-Protobuf-Hülle und Tokenformat.
+3. Vollständiges Modell unverändert verwenden. Keine Downloads, Updates,
+   Markierungsdateien oder Rechteänderungen bei diesem normalen lokalen Start.
+4. Lokales gültiges Community-Paket bei Bedarf einmalig bytegenau bereitstellen.
+5. Nur ein fehlendes Community-Modell bei `MODEL_AUTO_DOWNLOAD=true` herunterladen.
+6. sherpa-onnx lädt die Graphen und prüft ihre tatsächliche Runtime-Kompatibilität,
+   bevor der TCP-Listener startet.
 
-Community original source:
-https://huggingface.co/Banafo/Kroko-ASR/tree/d45212aeb212dd66083dd22710c9954f40ff8cc1
+Ungültige oder teilweise vorhandene Komponenten führen zu einer Fehlermeldung
+mit Ursache und Pfad. Es gibt kein automatisches Löschen, Ersetzen oder Reparieren.
+Eine Prüfsumme identifiziert die ausgewählte Revision; sie erteilt keine Lizenz.
 
-The pinned classic source already provides the validated INT8 encoder/decoder/joiner
-as `encoder.onnx`, `decoder.onnx`, `joiner.onnx`; tokens remain `tokens.txt`.
-Names alone do not establish compatibility: the startup hash check is authoritative.
+## Originalformat und einmalige Vorbereitung
 
-Community downloads are `Kroko-DE-Community-64-L-Streaming-001.data` and
-`Kroko-DE-Community-128-L-Streaming-001.data`. Their original SHA256 values are:
+Die bestehende sherpa-C-API erwartet vier Dateien und unterstützt die offiziellen
+Kroko-Pakete nicht direkt. Deshalb behält der Manager das originale `.data`-Paket
+**unverändert** und kopiert dessen vier Komponenten einmalig bytegenau heraus.
+Keine ONNX-Konvertierung, Quantisierung oder neue Inferenz-Runtime.
 
-| File | SHA256 |
-| --- | --- |
-| 64-L .data | `0013d4b3e1216b4e0c15f18f345aa58ca8bb2cdbeff7a7d55a513f6b400862a5` |
-| 128-L .data | `8d39babf998aba69446b1c1e3ac780bf5f90887ad95b0d60eb4bd79d63998462` |
+Bei einer automatischen Neuinstallation werden Paket und Komponenten zusammen
+im neuen Modellordner atomar bereitgestellt. Wer nur ein lokales `.data`-Paket
+kopiert, erhält die Komponenten unter `.runtime/<Paket-SHA256>/` innerhalb dieses
+Modellordners. Auch ein zunächst leerer Modell-Unterordner kann diese Cacheform
+verwenden. Beim Neustart wird der Cache geprüft und wiederverwendet.
 
-They are containers, not ONNX files. Our local compatibility work extracted the
-original encoder/decoder/joiner bytes and vocabulary without changing ONNX graphs.
-Only the extracted four validated files are runtime inputs. The raw .data file
-is not required by the server. This public source preparation does not distribute
-an extraction tool or grant permission to distribute the resulting model files.
-Use the independently prepared, hash-verified files; obtain clarification of model
-terms before sharing them. See [docs/licensing.md](licensing.md).
+Bereits vorhandene vollständige ONNX-/Token-Komponenten haben Vorrang und brauchen
+weder Paket noch Cache. Ein zusätzliches unbenutztes `.data`-Paket wird dann nicht
+zur Voraussetzung gemacht. Unvollständige Komponenten werden nicht aus einem
+Paket ergänzt: zuerst den Konflikt prüfen und bewusst beheben.
 
-Fuer Community-Alternativen zuerst die vier separat vorbereiteten, passenden
-Dateien in community-64/ bzw. community-128/ unter dem models-Ordner ablegen
-und gegen die Hashes in src/server/models.rs pruefen. Die .data-Datei allein
-genuegt nicht; der v0.1.0-Server entpackt sie nicht. Das Dropdown im CA-Template
-installiert keine Modelle. Fuer neue Nutzer ist daher Classic mit der obigen
-direkten Downloadanleitung der vollstaendig dokumentierte Standardweg.
+## Community-64 optional
 
-Classic and community-64 use encoder `decode_chunk_len=128`, `T=141` and a
-1.28-second feature step. Community-128 uses `decode_chunk_len=256`, `T=269`,
-a 2.56-second feature step. These are algorithmic model steps, not network chunk
-sizes. All accept 16 kHz mono PCM16 through this server with 80-dimensional
-features. The profiles use different validated final padding lengths.
+`KROKO_MODEL=community-64` setzen. Bei fehlendem Modell gilt derselbe sichere
+Originaldownload wie für Community-128. Alternativ das originale Paket
+`Kroko-DE-Community-64-L-Streaming-001.data` lokal im entsprechenden Modellordner
+bereitstellen. Nur das ausgewählte Modell wird geladen.
 
-The documented community container format is: a little-endian uint32 JSON-header
-length, that header (`type=zipformer2`, `free=true`), followed by four
-little-endian uint32 length-prefixed blocks in encoder/decoder/joiner/tokens order.
-Reject truncated data, non-free/encrypted packages and trailing bytes. Verify both
-the download checksum and each extracted file against the profile hashes.
-The format was checked against Banafo's official
-[ModelData.cc](https://github.com/kroko-ai/Kroko-ONNX/blob/f572b3b9494bef692142e05f3e1f0120845109b5/sherpa-onnx/csrc/ModelData.cc).
-No custom inference runtime is needed once the exact components are extracted.
+## Classic manuell
+
+`KROKO_MODEL=classic` setzen und die vorhandenen, passenden vier Dateien in
+`/models/classic/` verwenden. **Classic wird niemals automatisch heruntergeladen.**
+Fehlt es, nennt die Fehlermeldung die benötigten Dateien und den Zielordner.
+
+Bereits funktionierende Pfade bleiben unterstützt:
+
+- `/models/classic/` mit den vier bisherigen Dateien;
+- `/models/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06/`;
+- die vier Dateien direkt unter dem als `MODEL_DIR` konfigurierten Verzeichnis.
+
+Keine Verschiebung oder Umbenennung ist für diese bestehenden Exporte nötig.
+Die SHA256 des bekannten Classic-Exports bleiben unverändert in
+[src/server/models.rs](../src/server/models.rs).
+Andere eigene Exporte gehören unter eine Custom-ID, nicht unter `classic`.
+Die Classic-Gewichtslizenz bleibt ungeklärt; keine freie Weiterverteilung oder
+Lizenzfreigabe durch dieses Projekt.
+Der [historische Originalexport](https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06/tree/887db3d083240198c2d2b99fb66cfcfe6948ced8)
+bleibt als Herkunft dokumentiert; ein Link erteilt keine Nutzungsrechte.
+
+## Offline und manuelle Installation
+
+Vorhandene vollständige Modelle werden ohne Netzwerk verwendet, auch wenn der
+Download grundsätzlich aktiviert ist. Mit `MODEL_AUTO_DOWNLOAD=false` wird auch
+bei fehlendem Modell kein automatischer Netzwerkzugriff versucht.
+
+Entweder die vier passenden Komponenten kopieren oder das offizielle Community-
+Paket im jeweiligen Modellordner ablegen. Für ein reines Paket braucht die
+**erste** Vorbereitung dort Schreibrechte. Bereits vollständige Komponenten und
+fertige Caches funktionieren auch mit einem read-only Modellmount.
+Symlinks innerhalb der Modellpfade werden aus Sicherheitsgründen abgewiesen;
+reale Dateien oder ein Volume-/Bind-Mount verwenden. Das explizit konfigurierte
+Wurzelverzeichnis darf selbst auf persistenten Storage zeigen.
+
+## Custom-Modelle
+
+Eigene Modelle liegen unter `/models/custom/<name>/`; Namen dürfen ASCII-Buchstaben,
+Ziffern, Bindestrich und Unterstrich enthalten. Dort eine lokale `model.json`
+und die darin genannten Dateien ablegen. Ausgangspunkt:
+[docs/examples/custom-model.json](examples/custom-model.json).
+
+Das einfache Schema enthält ID, Anzeigename, Sprache, Modelltyp, Format, Backend,
+Version, Lizenz, vier Rollen mit relativen Pfaden und optionalen SHA256 sowie
+`tail_samples`. Für echte Integritätskontrolle die Hashes eintragen; `null` prüft
+nur Existenz und Format. Pfadtraversal, absolute Dateipfade, doppelte Rollen,
+Symlinks und reservierte Dateinamen werden abgewiesen.
+
+Die vorhandene Runtime kann `zipformer`-/`zipformer2`-Streaming-Transducer mit
+80 Filterbankkanälen, 16 kHz, Blank-ID 0 und den vier Rollen `encoder`, `decoder`,
+`joiner`, `tokens` laden. Der tatsächliche ONNX-Graph muss dazu passen.
+`tail_samples` muss zum Export passen und ein Vielfaches von 320 zwischen 320
+und 160000 sein; der Beispielwert ist **keine** allgemeine Modellgarantie.
+Decoder und CPU-Einstellungen bleiben unverändert: Greedy, standardmäßig ein
+Inferenzthread. Eine neue ASR-Runtime wird nicht installiert.
+
+Andere deklarierte Backends/Formate können bereits als lokale Manifest-/Dateisätze
+geprüft werden. Der Server weist sie mit einer klaren Meldung als nicht unterstützt
+zurück. `runtime_compatible` in der CLI ist eine deklarative Einordnung, kein
+vorgezogener nativer Graph-Ladetest. Nur der Serverstart bestätigt das tatsächliche
+Laden. Custom-Modelle werden niemals automatisch aus einer Manifest-URL geladen;
+`source` dokumentiert lediglich die Herkunft.
+
+## Prüfen und Status
+
+Die CLI liegt im Image. Vom Unraid-/Docker-Host aus aufrufen;
+`YOUR_KROKO_CONTAINER` durch den eigenen Containernamen ersetzen.
+Das Distroless-Image enthält keine Shell und benötigt keine Container-Konsole:
+
+```sh
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager list
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager status
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager verify community-128
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager verify classic
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager verify custom/my-german-model
+```
+
+Die Ausgabe ist JSON mit Auswahl, vorhanden/gültig, Quelle `local`/`download`,
+Format, Version/Hashes, Runtime-Einordnung und Fehlerursache. `list`, `status`
+und `verify` verändern keine Modell-Dateien und benötigen kein Internet.
+`verify` beendet sich bei Fehler mit Exitcode 1. Ein gültiges lokales Paket meldet
+`needs_preparation=true`, solange sein Cache fehlt. Die nativen Graphen werden
+nicht heimlich für Diagnosebefehle geladen.
+
+Für explizite Installation außerhalb des Serverstarts, bei laufendem Container:
+
+```sh
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager install community-128
+```
+
+Dieser ausdrücklich aufgerufene Installationsbefehl darf herunterladen; der
+Umgebungsschalter steuert den **automatischen Serverstart**, nicht diesen Befehl.
+Auch `install` ersetzt keine vorhandenen ungültigen Dateien.
+
+## Genau ein Modell entfernen
+
+Vorher den Server stoppen, der **dieses** Modell verwendet. Dann beispielsweise
+in einem separaten Container mit demselben Modellvolume ausführen:
+
+```sh
+model-manager remove community-128 --yes
+```
+
+Beispiel für ein separat gestartetes Verwaltungsprogramm unter Unraid, nachdem
+alle Container mit diesem Modell gestoppt wurden (Pfad/Image bei Bedarf anpassen):
+
+```sh
+docker run --rm --network none --read-only --user=99:100 \
+  --cap-drop=ALL --security-opt=no-new-privileges \
+  --mount type=bind,src=/mnt/user/appdata/kroko-stt-german-wyoming/models,dst=/models \
+  --entrypoint /usr/local/bin/model-manager \
+  kroko-stt-german-wyoming:local remove community-128 --yes
+```
+
+Für `list` oder `verify` genügt derselbe Aufruf mit geändertem Befehl; dafür muss
+der Server nicht gestoppt werden, und der Mount kann zusätzlich `readonly` sein.
+
+Nur das angegebene dedizierte Modellverzeichnis ist betroffen. Eine aktive
+Modellsperre verhindert das Entfernen. Enthält der Ordner unbekannte Dateien,
+Konfiguration oder Symlinks, wird vor der ersten Löschung abgebrochen.
+Geschwistermodelle, Appdata-Konfiguration und Wyoming-Daten bleiben erhalten.
+Die gemeinsame flache Classic-Legacyablage wird absichtlich nicht pauschal
+entfernt; ihre vier Dateien zuvor bei Bedarf in einen dedizierten Classic-Ordner
+verschieben. Es gibt kein globales `purge` und keine Force-Reparatur.
+Bleibt das entfernte Community-Modell ausgewählt und Auto-Download aktiv, wird es
+beim nächsten Start wieder installiert. Vorher ein anderes Modell auswählen oder
+`MODEL_AUTO_DOWNLOAD=false` setzen. Der Entfernungsbefehl ändert keine Konfiguration.
+
+## Download, Updates und Abbrüche
+
+Die einzige automatische Quelle ist das gepinnte offizielle
+[Banafo-Repository](https://huggingface.co/Banafo/Kroko-ASR/tree/d45212aeb212dd66083dd22710c9954f40ff8cc1).
+HTTPS bleibt auch bei Weiterleitungen erforderlich; der Anbieter kann seine
+Hosting-CDNs verwenden. Keine Projekt-Mirrors und kein automatisches `main`-Update.
+Der Download ist in Größe und Zeit begrenzt. Paket-SHA, Sprach-/Formatheader,
+Blockgrenzen und alle vier Komponenten-SHA werden vor Veröffentlichung geprüft.
+
+Neue Pakete liegen zuerst in einem privaten Staging-Verzeichnis auf demselben
+Volume. Erst das vollständig geprüfte Verzeichnis wird mit Linux
+`renameat2(RENAME_NOREPLACE)` atomar veröffentlicht. Auch ein gleichzeitig
+erschienener Zielordner wird nicht überschrieben. Die Funktion erfordert ein
+Linux-Dateisystem mit dieser Operation; Unraid XFS/Btrfs sind vorgesehen.
+Normale Downloadfehler entfernen nur das eigene Staging-Verzeichnis. Ein harter
+Prozess-/Hostabbruch kann ein verborgenes Staging-Verzeichnis hinterlassen;
+dieses zählt niemals als installiertes Modell und wird nicht global gelöscht.
+Ein abgebrochener Download wird nicht als fertiges Paket weiterverwendet.
+
+Container-/Image-Updates löschen keine Modelle: das gesamte Modellverzeichnis
+bleibt im persistenten Appdata-Mount. Für lokale vorhandene Modelle reicht `ro`;
+für automatische Installation, Paketvorbereitung und `remove` ist `rw` nötig.
+Der Container selbst bleibt unprivilegiert, UID 99 / GID 100, mit read-only RootFS.
+Ein vorhandener Modellordner wird nicht automatisch umberechtigt. Fehlen Rechte,
+nur den vorgesehenen Modellordner für UID 99/GID 100 schreibbar machen, keine
+pauschale Appdata-Reparatur und kein `chmod 777`.
+
+## Lizenz und Attribution
+
+Die offiziellen Quellen nennen Community-Modelle CC-BY-SA, weiterhin ohne
+nachgewiesene genaue Versionsangabe. Diese Restunsicherheit bleibt sichtbar;
+Es wird keine konkrete CC-BY-SA-Version unterstellt. Herkunft, Revision, Hash und Lizenzhinweis
+bleiben bei automatischen Installationen in `installation.json` erhalten.
+Der Download ist ein direkter Bezug vom Anbieter, keine Modellverteilung im
+Image. Classic bleibt lokal-only. Einzelheiten:
+[docs/licensing.md](licensing.md).
+
+Der Hinweis für Community-128 steht unter
+[Kroko Community model attribution](licensing.md#kroko-community-model-attribution).

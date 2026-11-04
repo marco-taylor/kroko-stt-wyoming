@@ -26,50 +26,97 @@ sherpa-onnx OnlineRecognizer
 Kroko Streaming-Modell
 ```
 
-## Modelle
+## Modelle und einfacher Erststart
 
-Die Modellgewichte werden extern bereitgestellt und sind weder Bestandteil dieses
-Repositories noch des Images. Über `KROKO_MODEL` wird eines der folgenden Profile
-ausgewählt; Standard ist `classic`:
+**Community-128 ist der Standard für Neuinstallationen.** Einen persistenten
+Appdata-Modellordner schreibbar nach `/models` einbinden, Community-128 belassen
+und starten. Fehlt es, lädt der Model Manager das offizielle Banafo-Paket,
+prüft SHA256 und bereitet es einmalig für die bestehende sherpa-onnx-Runtime vor.
+Danach ist Wyoming bereit. Beim Neustart: vorhandenes Modell prüfen, **kein
+neuer Download**. Die originalen Pakete und Modelle bleiben persistent erhalten.
 
-| Auswahl | Verzeichnis im Container | Modell |
+Diese Anleitung beschreibt **v0.2.0**. Öffentliche Images:
+`ghcr.io/marco-taylor/kroko-stt-german-wyoming:0.2.0` und `:latest`.
+Ein bestehendes v0.1.0-Image erhält die neue Funktion erst durch ein Image-Update;
+ein bloßer Neustart aktualisiert das Image nicht.
+
+Für Neuinstallationen mit dem v0.2.0-Image:
+
+1. In Unraid Community Apps **Kroko STT German Wyoming** installieren und
+   Community-128 sowie den persistenten Appdata-Modellpfad belassen.
+2. Container starten: das Modell wird bei Bedarf automatisch eingerichtet.
+3. In Home Assistant **Wyoming Protocol** hinzufügen: Unraid-Hostadresse und
+   den in Unraid gewählten Port eintragen. Danach `kroko` in der Assist-Pipeline
+   als STT-Anbieter auswählen.
+
+Beim ersten Start werden ungefähr 156 MB heruntergeladen; Paket und Komponenten
+benötigen zusammen ungefähr 312 MB persistenten Speicher. Danach funktionieren
+Spracherkennung und Neustarts ohne Internet.
+
+| Auswahl `KROKO_MODEL` | Persistenter Modellpfad | Bezug |
 | --- | --- | --- |
-| `classic` | `/models/classic/` | sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06 |
-| `community-64` | `/models/community-64/` | Kroko-DE-Community-64-L-Streaming-001 |
-| `community-128` | `/models/community-128/` | Kroko-DE-Community-128-L-Streaming-001 |
+| `community-128` | `/models/community-128/` | Automatisch vom Originalanbieter, falls nicht vorhanden |
+| `community-64` | `/models/community-64/` | Optional, ebenso automatisch oder lokal |
+| `classic` | `/models/classic/` | Ausschließlich manuell/lokal; niemals automatischer Download |
+| `custom/<name>` | `/models/custom/<name>/` | Lokal mit eigenem Manifest |
 
-Jedes Verzeichnis muss die geprüften Laufzeitdateien
-`encoder.onnx`, `decoder.onnx`, `joiner.onnx` und `tokens.txt` enthalten.
-Es wird immer nur ein Recognizer bzw. Modell geladen. Beim Start werden alle
-Dateien des ausgewählten Profils anhand der in
-[src/server/models.rs](src/server/models.rs) hinterlegten SHA256-Werte geprüft.
-Fehlende Dateien, falsche Prüfsummen oder unbekannte Modellnamen führen zu einer
-klaren Fehlermeldung und zum Abbruch. Beliebige neuere Exporte werden nicht
-automatisch akzeptiert.
+Community-128 erreichte im separaten Vergleich 7,28 % WER gegenüber 7,85 % bei
+Classic. Seine höheren CPU-/RAM- und Latenzanforderungen sind der akzeptierte
+Trade-off des neuen Standards; die 100 Aufnahmen beweisen keine allgemeine
+Überlegenheit. Classic bleibt die schnellere optionale Alternative.
 
-Classic-Export-Revision: `887db3d083240198c2d2b99fb66cfcfe6948ced8`.
-Community-Quellrevision: `d45212aeb212dd66083dd22710c9954f40ff8cc1`.
-Quellen und Hinweise zur Bereitstellung der Modelle stehen in
-[docs/models.md](docs/models.md).
+**Vorhandene Modelle werden nie automatisch ersetzt oder repariert.** Vollständige
+lokale Komponenten funktionieren ohne Internet, auch read-only. Alternativ reicht
+bei Community das originale `.data`-Paket; der Manager übernimmt die notwendige
+bytegenaue Erstvorbereitung. Die ASR-Runtime bleibt sherpa-onnx, CPU-only, Greedy.
 
-Für eine frische Unraid-Installation ist `classic` das empfohlene Standardmodell.
-Die Modellanleitung enthält einen vollständigen Copy-&-Paste-Befehlsblock für
-den manuellen Download der vier Dateien aus der exakt gepinnten Originalquelle,
-ihre SHA256-Prüfung und Leserechte für UID 99 / GID 100. Diesen Schritt **vor dem ersten
-Containerstart** ausführen; weder Image noch Server laden Modelle automatisch.
-Nutzer müssen die Bedingungen der Originalquelle prüfen und akzeptieren.
-Bei unklaren Nutzungsrechten ist eine Klärung mit dem Rechteinhaber erforderlich;
-eine freie Weiterverteilung der Classic-Gewichte wird nicht behauptet.
+`KROKO_MODEL=classic` bleibt rückwärtskompatibel. Ohne explizite Auswahl hat eine
+vorhandene Classic-Installation Vorrang vor dem neuen Neuinstallationsstandard.
+Die bestehenden Classic-Legacypfade werden ebenfalls erkannt. Für Offlinebetrieb
+`MODEL_AUTO_DOWNLOAD=false` setzen. Zum Modellwechsel Umgebung ändern und
+Container neu erstellen; ein Neustart allein ändert keine Umgebungsvariablen.
 
-`community-64` und `community-128` benötigen separat vorbereitete vollständige,
-hashgeprüfte Modellkomponenten. Eine `.data`-Datei allein genügt nicht; der Server
-extrahiert oder installiert sie nicht automatisch. Alle Modellgewichte bleiben
-außerhalb des Repositories und Docker-Images im persistenten Modellordner.
+Installation, Custom-Manifest, Modellverwaltung, Rechte,
+Originalquellen und Lizenzhinweise: [docs/models.md](docs/models.md).
+Modellgewichte sind weder im Repository noch im Image. Die Community-Lizenzversion
+bleibt vom Anbieter nicht eindeutig spezifiziert; Classic-Rechte bleiben ungeklärt.
 
-Zum Wechseln des Modells muss die Umgebungsvariable geändert und der Container
-neu erstellt werden. Ein `docker restart` allein ändert die Umgebung nicht.
-Der Wyoming-Name bleibt `kroko`, sodass für die Modellprofile keine getrennten
-Home-Assistant-Integrationen erforderlich sind.
+## Upgrade von Classic
+
+Bestehende Classic-Installationen funktionieren weiter. **Keine automatische
+Migration, kein Modellersatz und kein notwendiger Community-Download.**
+`KROKO_MODEL=classic` und den bestehenden persistenten Modell-Mount beim
+Containerupdate beibehalten. Ohne explizite Auswahl erkennt der Manager auch
+vorhandenes Classic einschließlich der bisherigen Verzeichnisformen.
+Community-128 ist ausschließlich der Default für neue/leere Installationen
+bzw. neue Standardkonfigurationen.
+
+Wer einen bestehenden Container manuell mit einer neuen CA-Vorlage neu anlegt,
+muss die bisherige Auswahl `classic` übernehmen: die Neuinstallationsvorlage
+setzt ausdrücklich `community-128`. Ein normaler Image-Update mit gespeicherter
+Konfiguration ändert die Auswahl nicht. Vollständige vorhandene Classic-Modelle
+können weiterhin read-only eingebunden bleiben.
+
+## Model-Manager-Befehle
+
+Im Unraid-Terminal, mit dem Namen des eigenen laufenden Containers
+anstelle von `YOUR_KROKO_CONTAINER` (das Distroless-Image enthält keine Shell):
+
+```sh
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager list
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager status
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager verify community-128
+docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager install community-64
+```
+
+`list`, `status` und `verify` sind offline und ändern keine Dateien. `install`
+bezieht ausschließlich fehlende Community-Modelle und ersetzt keine
+Bestandsdateien. `remove <ID> --yes` entfernt gezielt ein Modell; ein gerade
+verwendetes Modell ist gesperrt. Den sicheren Aufruf für einen gestoppten Server
+und die Folgen eines späteren Neustarts beschreibt
+[Ein Modell gezielt entfernen](docs/models.md#genau-ein-modell-entfernen).
+
+Release Notes: [v0.2.0](docs/releases/v0.2.0.md).
 
 ## Lokaler Docker-Build und Start
 
@@ -80,15 +127,14 @@ Spracherkennung zur Laufzeit nicht. Das finale Distroless-Image läuft als UID
 99 / GID 100 (Unraid nobody:users), enthält keine Modelle, Audiodateien, Python-Laufzeit oder Build-Werkzeuge
 und nutzt ausschließlich die CPU.
 
-Unter Unraid entspricht UID 99 / GID 100 `nobody:users`. Modelle bleiben
-read-only eingebunden; lesbare Dateien (644) und durchsuchbare Verzeichnisse
-(755) genügen, ohne deren Eigentümer zu ändern. Bei einer bestehenden
-CA-Installation muss die Benutzeroption in Extra Parameters ebenfalls auf
-`--user=99:100` geändert und der Container mit dem passenden Image neu erstellt
-werden. Ein bloßer Neustart übernimmt weder ein neues Image noch geänderte
-Containerparameter.
+Unter Unraid entspricht UID 99 / GID 100 `nobody:users`. Für den automatischen
+Erststart benötigt ausschließlich der persistente `/models`-Mount Schreibrechte.
+Bereits vollständige Classic-/Community-/Custom-Dateien können weiterhin `ro`
+bleiben. Der Manager verändert vorhandene Rechte nicht automatisch. Ein neues
+Image oder geänderte Containerparameter erfordern das Neuerstellen des Containers;
+ein bloßer Neustart übernimmt sie nicht.
 
-Dieser Weg ist derzeit für lokale Builds vorgesehen. Für die öffentliche
+Dieser Abschnitt beschreibt den optionalen lokalen Build. Für die
 Weiterverteilung eines fertigen Binaries bzw. Images ist die Lizenzprüfung aus
 [docs/licensing.md](docs/licensing.md) zu beachten.
 
@@ -110,9 +156,8 @@ Rechner zugreifen, müssen ein freier Port und eine erreichbare Bind-Adresse
 angegeben werden, zum Beispiel `BIND_ADDRESS=0.0.0.0 HOST_PORT=10321`.
 
 Wyoming TCP bietet selbst keine Authentifizierung und kein TLS. Der Dienst sollte
-daher nur im vertrauenswürdigen lokalen Netzwerk erreichbar sein. Modelle werden
-schreibgeschützt eingebunden; Docker-Socket und privilegierte Ausführung werden
-nicht benötigt.
+daher nur im vertrauenswürdigen lokalen Netzwerk erreichbar sein. Nur das persistente Modellvolume benötigt für Installation Schreibrechte;
+Docker-Socket und privilegierte Ausführung werden nicht benötigt.
 
 In Home Assistant die Integration **Wyoming Protocol** mit der erreichbaren
 Adresse des Docker-Hosts und dem gewählten Port hinzufügen. Anschließend `kroko`
@@ -121,8 +166,9 @@ Home-Assistant-Konfiguration nicht automatisch.
 
 | Umgebungsvariable | Container-Standard | Bedeutung |
 | --- | --- | --- |
-| `KROKO_MODEL` | `classic` | Ausgewähltes Modellprofil |
-| `MODEL_DIR` | `/models` | Übergeordnetes Verzeichnis der drei Modellordner |
+| `KROKO_MODEL` | Community-128 bei Neuinstallation | Auswahl; vorhandenes Classic ohne explizite Auswahl bleibt erhalten |
+| `MODEL_AUTO_DOWNLOAD` | `true` | Fehlende Community-Modelle automatisch beziehen; `false` für strikt lokalen Start |
+| `MODEL_DIR` | `/models` | Persistente Wurzel für bekannte Profile und `custom/<name>` |
 | `HOST` | `0.0.0.0` | Listener-Adresse im Container |
 | `PORT` | `10321` | Wyoming-TCP-Port |
 | `NUM_THREADS` | `1` | Inferenz-Threads, zulässig sind 1–4 |

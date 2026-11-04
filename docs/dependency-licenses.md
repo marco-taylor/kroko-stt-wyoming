@@ -155,7 +155,7 @@ Versioned source links contain original notices. Recheck when updating the lockf
 | zstd-safe | 7.3.0 | BSD-3-Clause | [crate source](https://docs.rs/crate/zstd-safe/7.3.0/source/) |
 | zstd-sys | 2.1.0+zstd.1.5.7 | BSD-3-Clause | [crate source](https://docs.rs/crate/zstd-sys/2.1.0+zstd.1.5.7/source/) |
 
-## Native runtime build (v0.1.0 candidate)
+## Native runtime build (unchanged since v0.1.0)
 
 The Dockerfile builds the official sherpa-onnx source with TTS, speaker
 diarization, GPU support, Python, demonstration binaries, PortAudio and

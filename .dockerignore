@@ -13,10 +13,12 @@ src/server/**
 !src/server/config.rs
 !src/server/asr.rs
 !src/server/models.rs
+!src/server/model_manager.rs
 !src/server/wyoming.rs
 !src/bin/
 src/bin/**
 !src/bin/wyoming-probe.rs
+!src/bin/model-manager.rs
 !scripts/
 scripts/**
 !scripts/collect-licenses.sh

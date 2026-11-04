@@ -42,3 +42,12 @@
 *.tar.xz
 *.7z
 *.onnx_data
+
+# Development-only Python acceptance tests
+__pycache__/
+*.pyc
+
+# Private local investigation/acceptance reports; preserve outside release sources
+/KROKO_MODEL_MANAGER_IMPLEMENTATION.md
+/KROKO_MODEL_MANAGER_UNRAID_ACCEPTANCE.md
+/docs/kroko-data-loader-analysis.md

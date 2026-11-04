@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "custom/my-german-model",
+  "display_name": "My German streaming model",
+  "language": "de",
+  "model_type": "zipformer2",
+  "format": "onnx-transducer",
+  "backend": "sherpa-onnx-transducer",
+  "version": "local-001",
+  "license": "Set the actual model license",
+  "tail_samples": 23040,
+  "files": [
+    {"role": "encoder", "path": "encoder.onnx", "sha256": null},
+    {"role": "decoder", "path": "decoder.onnx", "sha256": null},
+    {"role": "joiner", "path": "joiner.onnx", "sha256": null},
+    {"role": "tokens", "path": "tokens.txt", "sha256": null}
+  ],
+  "description": "Local-only template; set hashes, license and model-specific tail before use",
+  "source": null
+}
