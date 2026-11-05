@@ -1,5 +1,5 @@
 {
   "name": "kroko-stt-wyoming",
   "description": "Multilingual streaming speech-to-text with Kroko, sherpa-onnx, Rust and Wyoming. Built for Home Assistant and efficient CPU-only operation.",
-  "repository_url": "https://github.com/marco-taylor/kroko-stt-german-wyoming"
+  "repository_url": "https://github.com/marco-taylor/kroko-stt-wyoming"
 }

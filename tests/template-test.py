@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Validate the public Unraid contract without Docker or network access."""
+import pathlib
+import unittest
+import xml.etree.ElementTree as ET
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
+class TemplateContract(unittest.TestCase):
+    def setUp(self):
+        self.template = ET.parse(ROOT / 'templates/kroko-stt-wyoming.xml').getroot()
+        self.config = self.template.findall('Config')
+
+    def test_canonical_names_and_links(self):
+        self.assertEqual(self.template.findtext('Name'), 'kroko-stt-wyoming')
+        self.assertEqual(self.template.findtext('Repository'),
+                         'ghcr.io/marco-taylor/kroko-stt-wyoming:latest')
+        for tag in ['Registry', 'Support', 'Project', 'ReadMe', 'TemplateURL', 'Icon']:
+            self.assertNotIn('kroko-stt-german-wyoming', self.template.findtext(tag))
+
+    def test_internal_constants_are_not_user_options(self):
+        variables = {c.get('Target') for c in self.config if c.get('Type') == 'Variable'}
+        self.assertTrue(variables.isdisjoint({'HOST', 'PORT', 'MODEL_DIR'}))
+        dockerfile = (ROOT / 'Dockerfile').read_text()
+        for setting in ['HOST=0.0.0.0', 'PORT=10321', 'MODEL_DIR=/models']:
+            self.assertIn(setting, dockerfile)
+
+    def test_only_host_port_and_model_mount_are_exposed(self):
+        ports = [c for c in self.config if c.get('Type') == 'Port']
+        self.assertEqual(len(ports), 1)
+        self.assertEqual(ports[0].get('Target'), '10321')
+        self.assertEqual(ports[0].get('Mode'), 'tcp')
+        paths = [c for c in self.config if c.get('Type') == 'Path']
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(paths[0].get('Target'), '/models')
+        self.assertEqual(paths[0].text, '/mnt/user/appdata/kroko-stt-wyoming/models')
+
+    def test_language_options_match_real_catalog(self):
+        import json
+        catalog = json.loads((ROOT / 'src/server/model_catalog.json').read_text())
+        expected = {m['language'] for m in catalog['models']}
+        language = next(c for c in self.config if c.get('Target') == 'LANGUAGE')
+        self.assertEqual(set(language.get('Default').split('|')), expected)
+        self.assertEqual(language.text, 'de')
+        self.assertNotIn('Ausschließlich Deutsch', language.get('Description'))
+
+    def test_legacy_template_url_is_only_a_compatible_alias(self):
+        self.assertEqual((ROOT / 'templates/kroko-stt-german-wyoming.xml').read_bytes(),
+                         (ROOT / 'templates/kroko-stt-wyoming.xml').read_bytes())
+
+    def test_tailscale_is_not_added_by_this_project(self):
+        self.assertFalse(any(c.get('Target') == 'CA_TS_FALLBACK_DIR' for c in self.config))
+
+
+if __name__ == '__main__':
+    unittest.main()

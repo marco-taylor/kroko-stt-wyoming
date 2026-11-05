@@ -1,4 +1,4 @@
-<img src="icons/kroko-stt-german-wyoming.png" alt="Kroko STT Wyoming Icon" width="160" height="160">
+<img src="icons/kroko-stt-wyoming.png" alt="Kroko STT Wyoming Icon" width="160" height="160">
 
 # Kroko STT Wyoming
 
@@ -16,7 +16,7 @@ keine Python-Laufzeit, keine GPU und keine zusätzliche Inferenz-Runtime.
 4. In Home Assistant **Wyoming Protocol** hinzufügen: Unraid-Hostadresse und den
    gewählten freien Host-Port eintragen; anschließend `kroko` in Assist wählen.
 
-Neuinstallation: `ghcr.io/marco-taylor/kroko-stt-german-wyoming:0.3.0` oder `:latest`.
+Neuinstallation: `ghcr.io/marco-taylor/kroko-stt-wyoming:0.3.1` oder `:latest`.
 Modelle liegen persistent außerhalb des Images. Neustart und Containerupdate
 laden vollständige gültige Modelle nicht erneut herunter. Nach erfolgreicher
 Installation funktionieren Start und Spracherkennung auch offline und read-only.
@@ -108,7 +108,7 @@ verwendetes Modell ist gesperrt. Den sicheren Aufruf für einen gestoppten Serve
 und die Folgen eines späteren Neustarts beschreibt
 [Ein Modell gezielt entfernen](docs/models.md#cli-und-sichere-entfernung).
 
-Release Notes: [v0.3.0](docs/releases/v0.3.0.md); [v0.2.0](docs/releases/v0.2.0.md) bleibt unverändert.
+Release Notes: [v0.3.1](docs/releases/v0.3.1.md); [v0.3.0](docs/releases/v0.3.0.md); [v0.2.0](docs/releases/v0.2.0.md) bleibt unverändert.
 
 ## Lokaler Docker-Build und Start
 
@@ -303,11 +303,20 @@ begründen keine Partnerschaft, Unterstützung oder Empfehlung durch diese Proje
 
 ### Name und Upgrade-Kompatibilität
 
-Projekt-, Anzeigename und neuer Containername: `kroko-stt-wyoming`.
-Kompatibler Image-Pfad: `ghcr.io/marco-taylor/kroko-stt-german-wyoming:0.3.0` bzw. `:latest`.
-Das bestehende Repository und die bisherige Template-/Icon-Adresse bleiben
-absichtlich erreichbar. Der bisherige Image-Name bleibt der Veröffentlichungs- und Upgrade-Pfad;
-bestehende versionierte Images werden nicht verändert.
-Bestehende Container, gespeicherte Unraid-Vorlagen und Appdata-Pfade werden nicht
-umbenannt oder automatisch migriert. Die neue CA-Vorlage behält den bisherigen
-Appdata-Default, damit vorhandene Modelle weiterhin auffindbar bleiben.
+Ab v0.3.1 heißt das öffentliche Repository und Image `kroko-stt-wyoming`.
+Neuinstallationen verwenden `ghcr.io/marco-taylor/kroko-stt-wyoming:0.3.1`
+und den Appdata-Default `/mnt/user/appdata/kroko-stt-wyoming/models`.
+Die interne Ablage bleibt `/models/<sprache>/<modell>/`.
+
+Bestehende Container und gespeicherte Unraid-Konfigurationen werden **nicht**
+umbenannt. Bestehende Modell-Mounts beibehalten, auch wenn deren Hostpfad noch
+`kroko-stt-german-wyoming` heißt. Keine Dateien verschieben und keinen neuen
+leeren Mount über einen vorhandenen Modellbestand legen. Classic-Auswahl beibehalten.
+GitHub leitet die frühere Repository-Adresse nach der Umbenennung weiter.
+Die alte Template-Datei und das alte Icon bleiben ausschließlich als Link-Kompatibilität
+verfügbar; die kanonische Vorlage ist `templates/kroko-stt-wyoming.xml`.
+Ältere versionierte Images und Releases werden nicht überschrieben.
+
+[Änderungen und Migration v0.3.1](docs/releases/v0.3.1.md).
+
+[Veröffentlichungs- und Installationsaudit](docs/publication-audit.md).

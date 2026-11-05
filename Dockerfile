@@ -29,9 +29,9 @@ RUN sh /opt/collect-licenses.sh \
  && find /opt/sherpa/lib -maxdepth 1 -name '*.so*' ! -name '*cxx-api*' -exec cp -P '{}' /opt/runtime-libs/ \;
 FROM gcr.io/distroless/cc-debian12@sha256:777e96cf322c46bc32aca926c263624c4dc8d7cf37e2fa65ba2c7e697318ebbb
 ARG VCS_REF=uncommitted
-LABEL org.opencontainers.image.source="https://github.com/marco-taylor/kroko-stt-german-wyoming" \
+LABEL org.opencontainers.image.source="https://github.com/marco-taylor/kroko-stt-wyoming" \
       org.opencontainers.image.title="Kroko STT Wyoming" \
-      org.opencontainers.image.version="0.3.0" \
+      org.opencontainers.image.version="0.3.1" \
       org.opencontainers.image.revision=$VCS_REF
 COPY --from=build /build/target/release/kroko-wyoming /usr/local/bin/kroko-wyoming
 COPY --from=build /build/target/release/model-manager /usr/local/bin/model-manager

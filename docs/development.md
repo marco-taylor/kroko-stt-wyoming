@@ -3,7 +3,7 @@
 The public application consists of the server modules under `src/server/` and
 `src/bin/wyoming-probe.rs` and `src/bin/model-manager.rs`. There are three explicitly declared Cargo binaries;
 historical local benchmark code is excluded and automatic example discovery is
-disabled. Dependencies remain pinned by Cargo.lock. No additional inference runtime was added. The package and new container name are `kroko-stt-wyoming`. The existing GitHub repository URL and GHCR package remain compatible.
+disabled. Dependencies remain pinned by Cargo.lock. No additional inference runtime was added. The package and new container name are `kroko-stt-wyoming`. Canonical GitHub and GHCR names are `kroko-stt-wyoming` from v0.3.1. Existing saved container/model mounts remain unchanged.
 
 The Docker build runs `cargo test --locked` and `cargo build --release --locked
 --bins` using a source-built native sherpa C API with TTS and diarization disabled.
@@ -116,3 +116,10 @@ fixtures enable native English tests. It never downloads packages itself.
 The existing smoke scripts also accept `--binaries /path/to/new/debug-or-release`
 to mount newly compiled binaries into an isolated existing local runtime image.
 Do not confuse this with a newly published image or a performance benchmark.
+
+## Unraid template contract
+
+Run `python3 tests/template-test.py` from the checkout. It checks the canonical
+names and links, the language catalogue, the single persistent model mount, host
+port mapping, compatibility alias, and absence of internal HOST/PORT/MODEL_DIR
+options. Runtime defaults remain in the Dockerfile and server configuration.

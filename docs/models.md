@@ -255,13 +255,23 @@ Auto-Download später erneut installiert; vorher die Auswahl bewusst ändern.
 ## Namen und Lizenz
 
 Der neutrale Projekt- und neue Containername ist `kroko-stt-wyoming`.
-Die bestehende Repository-Adresse sowie Template- und Icon-Dateinamen bleiben
-für Upgrade-Kompatibilität erhalten. Der bisherige GHCR-Name bleibt als Veröffentlichungs- und Upgrade-Pfad
-erhalten; ältere versionierte Images bleiben unverändert.
+Kanonisches Repository, GHCR-Image und neue CA-Vorlage heißen ab v0.3.1
+`kroko-stt-wyoming`. Neue Appdata-Verzeichnisse verwenden diesen Namen.
 Bestehende Container, Appdata-Mounts und gespeicherte Unraid-Templates werden
-nicht automatisch umbenannt oder geändert.
+nicht automatisch umbenannt oder geändert. Vorhandene deutsche Modelle werden
+weiter ohne Download und ohne erzwungene Migration wiederverwendet.
+Ein bisheriger Hostpfad mit `kroko-stt-german-wyoming` bleibt gültig.
 
 Community: CC-BY-SA, Versionsnummer vom Anbieter nicht spezifiziert.
 Classic-Rechte bleiben ungeklärt.
 Gewichte sind weder im Git-Repository noch im Containerimage enthalten.
 [Details](licensing.md).
+
+### Bestehende Unraid-Installation auf den neuen Image-Namen umstellen
+
+Optional nur die Image-Referenz auf `ghcr.io/marco-taylor/kroko-stt-wyoming:0.3.1`
+ändern. Den vorhandenen Host-Modellpfad, die Sprache, Modellauswahl und das
+Host-Port-Mapping übernehmen. Ein alter Hostpfad muss nicht umbenannt werden.
+Die gespeicherte Benutzer-Vorlage wird nicht automatisch umgeschrieben.
+Die bisherigen versionierten GHCR-Images bleiben verfügbar; ein Repository-Redirect
+bei GitHub benennt ein GHCR-Paket nicht automatisch um.
