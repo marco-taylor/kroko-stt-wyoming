@@ -3,14 +3,15 @@
 The public application consists of the server modules under `src/server/` and
 `src/bin/wyoming-probe.rs` and `src/bin/model-manager.rs`. There are three explicitly declared Cargo binaries;
 historical local benchmark code is excluded and automatic example discovery is
-disabled. Dependencies remain pinned by Cargo.lock. No additional runtime was added.
+disabled. Dependencies remain pinned by Cargo.lock. No additional inference runtime was added. The package and new container name are `kroko-stt-wyoming`. The existing GitHub repository URL and GHCR package remain compatible.
 
 The Docker build runs `cargo test --locked` and `cargo build --release --locked
 --bins` using a source-built native sherpa C API with TTS and diarization disabled.
 The official Rust `shared` feature is used; there is no custom FFI or second
-inference runtime. Fifteen distinct unit tests cover protocol framing/limits, model selection,
-local-first validation, safe staging, failed downloads and scoped removal. Shared
-modules execute these tests across all three binaries (30 test executions). The probe additionally verifies Describe and
+inference runtime. The release build runs all unit tests across the three binaries. Shared
+modules execute some tests in multiple binaries. Coverage includes framing,
+language/model identity, local-first validation, safe staging, selected-only
+downloads, package cleanup guards and scoped removal. The probe additionally verifies Describe and
 can send existing WAV audio in paced 20 ms chunks with intentionally fragmented
 TCP writes. No regression audio is distributed because its redistribution
 provenance has not been established.
@@ -64,7 +65,7 @@ With a local candidate image and independently supplied local model/audio fixtur
 
 ```sh
 python3 tests/model-manager-smoke.py \
-  --image kroko-stt-german-wyoming:v0.2.0-test \
+  --image kroko-stt-wyoming:release-test \
   --fixtures /absolute/path/to/local/models \
   --wav-dir /absolute/path/to/local/neural-wavs \
   --output /absolute/path/to/a/new/test-output-directory \
@@ -80,3 +81,38 @@ Existing licensed fixture models `classic` and `community-128` and the two WAVs
 are prerequisites; no models or audio are distributed with these tests.
 Python is a development-test dependency, not an image/runtime dependency.
 Release validation and limitations: [v0.2.0 release notes](releases/v0.2.0.md).
+
+## Local custom-package regression checks
+
+The development candidate adds explicit local free `.data` selection. With existing official
+Community packages and a separately supplied German PCM16/16 kHz mono fixture:
+
+```sh
+python3 tests/custom-data-smoke.py \
+  --image kroko-stt-wyoming:release-test \
+  --models /absolute/path/to/local/models \
+  --audio /absolute/path/to/01.wav \
+  --output /absolute/path/to/a/new/custom-test-output
+```
+
+The expected sentence is "Schalte das Licht im Wohnzimmer ein". This test
+uses uniquely named isolated containers, random loopback host ports and copied
+model packages. It checks explicit selection with two packages, preparation,
+Wyoming through the host port, restart without preparation, offline/read-only
+startup and transcription, UID/GID 99:100, scoped errors and preservation of
+invalid caches. A synthetic `free=false` header verifies rejection before
+writes; no protected model is needed. No downloads or
+publications occur. Test-output model copies can be removed after all test
+containers have been stopped; never use production storage as the output path.
+
+## Multilingual checks
+
+The catalogue is embedded from `src/server/model_catalog.json`. Language and
+variant form the identity; German v0.2.0 paths are legacy aliases only for `de`.
+`tests/multilingual-smoke.py` verifies real German variant switching, package
+cleanup after preparation, failure
+without fallback when English is absent. Optional already authorized English
+fixtures enable native English tests. It never downloads packages itself.
+The existing smoke scripts also accept `--binaries /path/to/new/debug-or-release`
+to mount newly compiled binaries into an isolated existing local runtime image.
+Do not confuse this with a newly published image or a performance benchmark.

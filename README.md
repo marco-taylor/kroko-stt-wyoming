@@ -1,85 +1,77 @@
-<img src="icons/kroko-stt-german-wyoming.png" alt="Kroko STT German Wyoming Icon" width="160" height="160">
+<img src="icons/kroko-stt-german-wyoming.png" alt="Kroko STT Wyoming Icon" width="160" height="160">
 
-# Kroko STT German Wyoming
+# Kroko STT Wyoming
 
-Deutsche Streaming-Spracherkennung mit Kroko, sherpa-onnx, Rust und Wyoming.
-Entwickelt für Home Assistant und einen effizienten CPU-Betrieb.
+Mehrsprachige lokale Streaming-Spracherkennung für Home Assistant mit Rust,
+sherpa-onnx und Wyoming. CPU-only, linux/amd64, standardmäßig ein Thread;
+keine Python-Laufzeit, keine GPU und keine zusätzliche Inferenz-Runtime.
 
-Dieses Projekt ermöglicht lokale deutsche Online-Spracherkennung auf linux/amd64,
-auch auf sparsamen Systemen wie dem Intel N100. Audioblöcke werden direkt beim
-Eintreffen mit Rust und dem nativen OnlineRecognizer von sherpa-onnx verarbeitet.
-Ein Python-Dienst, eine GPU oder eine zweite Inferenz-Laufzeit werden nicht benötigt.
-Für die Spracherkennung selbst ist keine Netzwerkverbindung erforderlich.
-Das Classic-Modell und der Wyoming-Dienst wurden mit Home Assistant getestet.
+## Installation
 
-**Unterstützte Sprache:** ausschließlich Deutsch (`de` / `de-DE`).
+1. In Unraid Community Apps **Kroko STT Wyoming** installieren.
+2. Sprache wählen (`de` ist Standard), **Community-128** belassen und den
+   persistenten Modellordner nach `/models` einbinden.
+3. Container starten: Nur das ausgewählte fehlende Community-Modell wird direkt
+   vom Originalanbieter geladen, per gepinntem SHA256 geprüft und vorbereitet.
+4. In Home Assistant **Wyoming Protocol** hinzufügen: Unraid-Hostadresse und den
+   gewählten freien Host-Port eintragen; anschließend `kroko` in Assist wählen.
 
-```text
-Mikrofon / Home Assistant
-        ↓
-Wyoming
-        ↓
-Rust-Server
-        ↓
-sherpa-onnx OnlineRecognizer
-        ↓
-Kroko Streaming-Modell
-```
+Neuinstallation: `ghcr.io/marco-taylor/kroko-stt-german-wyoming:0.3.0` oder `:latest`.
+Modelle liegen persistent außerhalb des Images. Neustart und Containerupdate
+laden vollständige gültige Modelle nicht erneut herunter. Nach erfolgreicher
+Installation funktionieren Start und Spracherkennung auch offline und read-only.
 
-## Modelle und einfacher Erststart
+Der deutsche Erstdownload benötigt ungefähr 156 MB. Nach vollständig verifizierter
+Vorbereitung wird das redundante freie Community-Paket entfernt; ONNX-Komponenten
+und Prüfmetadaten bleiben erhalten. Während der Installation ist vorübergehend
+zusätzlicher Speicher für Paket und Komponenten nötig. Keine automatische
+Reparatur oder Ersetzung ungültiger Bestandsdateien.
 
-**Community-128 ist der Standard für Neuinstallationen.** Einen persistenten
-Appdata-Modellordner schreibbar nach `/models` einbinden, Community-128 belassen
-und starten. Fehlt es, lädt der Model Manager das offizielle Banafo-Paket,
-prüft SHA256 und bereitet es einmalig für die bestehende sherpa-onnx-Runtime vor.
-Danach ist Wyoming bereit. Beim Neustart: vorhandenes Modell prüfen, **kein
-neuer Download**. Die originalen Pakete und Modelle bleiben persistent erhalten.
+## Sprache und Modell
 
-Diese Anleitung beschreibt **v0.2.0**. Öffentliche Images:
-`ghcr.io/marco-taylor/kroko-stt-german-wyoming:0.2.0` und `:latest`.
-Ein bestehendes v0.1.0-Image erhält die neue Funktion erst durch ein Image-Update;
-ein bloßer Neustart aktualisiert das Image nicht.
+`LANGUAGE` und `MODEL` bilden gemeinsam eine eindeutige Identität. `KROKO_MODEL`
+ist ein rückwärtskompatibler Alias für `MODEL`; beide dürfen sich nicht widersprechen.
+Eine Serverinstanz lädt genau ein Modell. Ein Wechsel erfordert angepasste
+Umgebungsvariablen und Neuerstellen des eigenen Containers.
 
-Für Neuinstallationen mit dem v0.2.0-Image:
-
-1. In Unraid Community Apps **Kroko STT German Wyoming** installieren und
-   Community-128 sowie den persistenten Appdata-Modellpfad belassen.
-2. Container starten: das Modell wird bei Bedarf automatisch eingerichtet.
-3. In Home Assistant **Wyoming Protocol** hinzufügen: Unraid-Hostadresse und
-   den in Unraid gewählten Port eintragen. Danach `kroko` in der Assist-Pipeline
-   als STT-Anbieter auswählen.
-
-Beim ersten Start werden ungefähr 156 MB heruntergeladen; Paket und Komponenten
-benötigen zusammen ungefähr 312 MB persistenten Speicher. Danach funktionieren
-Spracherkennung und Neustarts ohne Internet.
-
-| Auswahl `KROKO_MODEL` | Persistenter Modellpfad | Bezug |
+| Auswahl | Persistenter neuer Modellpfad | Bezug |
 | --- | --- | --- |
-| `community-128` | `/models/community-128/` | Automatisch vom Originalanbieter, falls nicht vorhanden |
-| `community-64` | `/models/community-64/` | Optional, ebenso automatisch oder lokal |
-| `classic` | `/models/classic/` | Ausschließlich manuell/lokal; niemals automatischer Download |
-| `custom/<name>` | `/models/custom/<name>/` | Lokal mit eigenem Manifest |
+| `LANGUAGE=de`, `MODEL=community-128` | `/models/de/community-128/` | Standard, bei Bedarf automatisch |
+| `LANGUAGE=en`, `MODEL=community-128` | `/models/en/community-128/` | Bei Bedarf automatisch |
+| `MODEL=community-64` | `/models/<sprache>/community-64/` | Optional, nur wenn ausgewählt |
+| `LANGUAGE=de`, `MODEL=classic` | `/models/de/classic/` oder bestehender Legacy-Pfad | Nur manuell/lokal |
+| `MODEL=custom/<name>` | `/models/<sprache>/custom/<name>/` | Lokal mit Manifest |
 
-Community-128 erreichte im separaten Vergleich 7,28 % WER gegenüber 7,85 % bei
-Classic. Seine höheren CPU-/RAM- und Latenzanforderungen sind der akzeptierte
-Trade-off des neuen Standards; die 100 Aufnahmen beweisen keine allgemeine
-Überlegenheit. Classic bleibt die schnellere optionale Alternative.
+Community-Sprachen: Deutsch, Englisch, Spanisch, Französisch, Italienisch,
+Hebräisch, Niederländisch, Portugiesisch, Schwedisch und Türkisch.
+Schwedisch wird nur mit Community-64 angeboten. Classic bleibt Deutsch.
+Nicht unterstützte Kombinationen brechen ohne Sprachfallback ab.
+Die [Modellmatrix](docs/models.md) unterscheidet verfügbare und nativ getestete
+Kombinationen; der [offizielle Katalog](src/server/model_catalog.json) pinnt Quellen,
+Dateigrößen und Prüfsummen. Keine automatische Spracherkennung.
 
-**Vorhandene Modelle werden nie automatisch ersetzt oder repariert.** Vollständige
-lokale Komponenten funktionieren ohne Internet, auch read-only. Alternativ reicht
-bei Community das originale `.data`-Paket; der Manager übernimmt die notwendige
-bytegenaue Erstvorbereitung. Die ASR-Runtime bleibt sherpa-onnx, CPU-only, Greedy.
+Community-128 erreichte im separaten deutschen Vergleich 7,28 % WER,
+Classic 7,85 %. Classic bleibt die schnellere optionale Alternative; diese
+100 Aufnahmen sind keine allgemeine Qualitätsgarantie.
 
-`KROKO_MODEL=classic` bleibt rückwärtskompatibel. Ohne explizite Auswahl hat eine
-vorhandene Classic-Installation Vorrang vor dem neuen Neuinstallationsstandard.
-Die bestehenden Classic-Legacypfade werden ebenfalls erkannt. Für Offlinebetrieb
-`MODEL_AUTO_DOWNLOAD=false` setzen. Zum Modellwechsel Umgebung ändern und
-Container neu erstellen; ein Neustart allein ändert keine Umgebungsvariablen.
+## Manuell, offline und Custom
 
-Installation, Custom-Manifest, Modellverwaltung, Rechte,
-Originalquellen und Lizenzhinweise: [docs/models.md](docs/models.md).
-Modellgewichte sind weder im Repository noch im Image. Die Community-Lizenzversion
-bleibt vom Anbieter nicht eindeutig spezifiziert; Classic-Rechte bleiben ungeklärt.
+Vollständige lokale Modelle werden vor jedem Download geprüft und wiederverwendet.
+`MODEL_AUTO_DOWNLOAD=false` erzwingt lokalen Betrieb. Classic benötigt die vier
+bestehenden Dateien Encoder, Decoder, Joiner und Tokens; alte deutsche Modellpfade
+funktionieren weiter. Kein Classic-Download und keine erzwungene Migration.
+
+Vorbereitete Custom-Modelle verwenden ein lokales Manifest mit Sprache,
+Backend und Dateizuordnung. Freie lokale Kroko-Pakete lassen sich ausdrücklich
+mit `MODEL=custom/<name>` und `CUSTOM_MODEL_PATH=/models/<datei>.data` auswählen.
+Die einmalige Vorbereitung übernimmt der Container. Manuelle Custom-Originale
+bleiben erhalten. Es gibt keine mehrdeutige automatische Dateiauswahl und keinen
+öffentlichen Downloader für externe Custom-Modelle.
+
+[Installation, Manifest, Prüfungen und sichere Entfernung](docs/models.md).
+Modelle sind weder im Repository noch im Image. Die Community-Lizenz lautet
+CC-BY-SA, Version vom Anbieter nicht angegeben; Classic-Modellrechte bleiben
+separat zu klären. [Lizenzhinweise](docs/licensing.md).
 
 ## Upgrade von Classic
 
@@ -114,9 +106,9 @@ bezieht ausschließlich fehlende Community-Modelle und ersetzt keine
 Bestandsdateien. `remove <ID> --yes` entfernt gezielt ein Modell; ein gerade
 verwendetes Modell ist gesperrt. Den sicheren Aufruf für einen gestoppten Server
 und die Folgen eines späteren Neustarts beschreibt
-[Ein Modell gezielt entfernen](docs/models.md#genau-ein-modell-entfernen).
+[Ein Modell gezielt entfernen](docs/models.md#cli-und-sichere-entfernung).
 
-Release Notes: [v0.2.0](docs/releases/v0.2.0.md).
+Release Notes: [v0.3.0](docs/releases/v0.3.0.md); [v0.2.0](docs/releases/v0.2.0.md) bleibt unverändert.
 
 ## Lokaler Docker-Build und Start
 
@@ -172,7 +164,7 @@ Home-Assistant-Konfiguration nicht automatisch.
 | `HOST` | `0.0.0.0` | Listener-Adresse im Container |
 | `PORT` | `10321` | Wyoming-TCP-Port |
 | `NUM_THREADS` | `1` | Inferenz-Threads, zulässig sind 1–4 |
-| `LANGUAGE` | `de` | `de` oder `de-DE`; die Modelle sind ausschließlich deutschsprachig |
+| `LANGUAGE` | `de` | Modell-Sprache, z.B. `de` oder `en`; regionale Aliase werden normalisiert. |
 | `LOG_LEVEL` | `info` | `error`, `warn`, `info`, `debug` |
 | `TZ` | `Europe/Berlin` | Zeitzone des Containers |
 
@@ -217,7 +209,7 @@ Der mitgelieferte `wyoming-probe` dient als Healthcheck und optional als lokaler
 WAV-Smoke-Test:
 
 ```sh
-docker exec kroko-stt-german-wyoming-local /usr/local/bin/wyoming-probe
+docker exec kroko-stt-wyoming-local /usr/local/bin/wyoming-probe
 # Mit einer separat schreibgeschützt eingebundenen 16-kHz-Mono-PCM16-WAV:
 # wyoming-probe --smoke 127.0.0.1:10321 /test/01.wav
 ```
@@ -291,7 +283,7 @@ dieses Projekts.
 
 Dieses Projekt baut auf der Arbeit mehrerer Open-Source-Projekte und Communities auf:
 
-- **Kroko / Banafo** – für die deutschen Kroko-Streaming-Spracherkennungsmodelle.
+- **Kroko / Banafo** – für die Kroko-Streaming-Spracherkennungsmodelle.
 - **sherpa-onnx / k2-fsa** – für die effiziente Streaming-ASR-Laufzeit und den
   OnlineRecognizer.
 - **Wyoming** – für das leichtgewichtige Sprachassistenten-Protokoll zur
@@ -309,9 +301,13 @@ Kroko/Banafo, sherpa-onnx, Wyoming und Home Assistant sind unabhängige Projekte
 Ihre Namen und Marken gehören den jeweiligen Rechteinhabern. Die Danksagungen
 begründen keine Partnerschaft, Unterstützung oder Empfehlung durch diese Projekte.
 
-### Technischer Unraid-Containername
+### Name und Upgrade-Kompatibilität
 
-Eine frische Installation über Community Applications verwendet exakt den
-Containernamen `kroko-stt-german-wyoming`. Das Image-Repository bleibt
-`ghcr.io/marco-taylor/kroko-stt-german-wyoming`. Eine bestehende Installation
-wird durch eine Template-Aktualisierung nicht automatisch umbenannt.
+Projekt-, Anzeigename und neuer Containername: `kroko-stt-wyoming`.
+Kompatibler Image-Pfad: `ghcr.io/marco-taylor/kroko-stt-german-wyoming:0.3.0` bzw. `:latest`.
+Das bestehende Repository und die bisherige Template-/Icon-Adresse bleiben
+absichtlich erreichbar. Der bisherige Image-Name bleibt der Veröffentlichungs- und Upgrade-Pfad;
+bestehende versionierte Images werden nicht verändert.
+Bestehende Container, gespeicherte Unraid-Vorlagen und Appdata-Pfade werden nicht
+umbenannt oder automatisch migriert. Die neue CA-Vorlage behält den bisherigen
+Appdata-Default, damit vorhandene Modelle weiterhin auffindbar bleiben.

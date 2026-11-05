@@ -18,8 +18,9 @@ struct ClientSlot;
 impl Drop for ClientSlot {fn drop(&mut self){CLIENTS.fetch_sub(1,Ordering::SeqCst);}}
 
 fn info(config:&Config)->Value {
-    json!({"asr":[{"name":PROGRAM_NAME,"description":"Local German streaming ASR in Rust; client audio-stop required","attribution":{"name":"Local Rust/sherpa-onnx prototype","url":"https://github.com/k2-fsa/sherpa-onnx"},"installed":true,"version":env!("CARGO_PKG_VERSION"),"supports_transcript_streaming":false,"requires_external_vad":true,"models":[{"name":MODEL_NAME,"description":format!("German streaming model ({})",config.model.key()),"attribution":{"name":"Banafo / Kroko-ASR","url":"https://huggingface.co/Banafo/Kroko-ASR"},"installed":true,"version":config.model.revision(),"languages":["de","de-DE"]}]}]})
+    json!({"asr":[{"name":PROGRAM_NAME,"description":"Local streaming ASR in Rust; client audio-stop required","attribution":{"name":"Local Rust/sherpa-onnx prototype","url":"https://github.com/k2-fsa/sherpa-onnx"},"installed":true,"version":env!("CARGO_PKG_VERSION"),"supports_transcript_streaming":false,"requires_external_vad":true,"models":[{"name":if config.model.is_custom(){config.model.key()}else{MODEL_NAME},"description":format!("Streaming model ({})",config.model.identity()),"attribution":{"name":if config.model.is_custom(){"External custom model"}else{"Banafo / Kroko-ASR"},"url":if config.model.is_custom(){"https://github.com/k2-fsa/sherpa-onnx"}else{"https://huggingface.co/Banafo/Kroko-ASR"}},"installed":true,"version":config.model.revision(),"languages":if config.language=="de" {vec!["de", "de-DE"]} else {vec![config.language.as_str()]}}]}]})
 }
+fn accepts_language(configured:&str,requested:&str)->bool { models::normalize_language(requested).ok().as_deref()==Some(configured) }
 fn reject(stream:&mut TcpStream,code:&str,text:&str)->io::Result<()> { wyoming::error(stream,code,text) }
 fn handle(mut socket:TcpStream, engine:&Mutex<Engine>, config:&Config)->io::Result<()> {
     socket.set_read_timeout(Some(Duration::from_secs(15)))?;
@@ -44,10 +45,10 @@ fn handle(mut socket:TcpStream, engine:&Mutex<Engine>, config:&Config)->io::Resu
             "transcribe"=>{
                 if session.is_some(){reject(&mut socket,"invalid_sequence","transcribe during active audio stream")?;return Ok(());}
                 if let Some(name)=event.data.get("name").filter(|v|!v.is_null()) {
-                    if !matches!(name.as_str(),Some("kroko"|"sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06")){reject(&mut socket,"unknown_model","Requested model is not installed")?;return Ok(());}
+                    if name.as_str()!=Some("kroko") && !(config.model.is_custom() && name.as_str()==Some(config.model.key())) && !(config.language=="de" && name.as_str()==Some("sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06")){reject(&mut socket,"unknown_model","Requested model is not installed")?;return Ok(());}
                 }
                 if let Some(language)=event.data.get("language").filter(|v|!v.is_null()) {
-                    if !matches!(language.as_str(),Some("de"|"de-DE")){reject(&mut socket,"unsupported_language","Only German (de/de-DE) is supported")?;return Ok(());}
+                    if !language.as_str().is_some_and(|l|accepts_language(&config.language,l)){reject(&mut socket,"unsupported_language","Requested language differs from the configured model; no language fallback")?;return Ok(());}
                 }
             }
             "audio-start"=>{
@@ -97,3 +98,28 @@ fn run()->Result<(),String> {
     Ok(())
 }
 fn main(){if let Err(error)=run(){eprintln!("{}",json!({"event":"startup_error","error":error}));std::process::exit(1);}}
+
+#[cfg(test)]
+mod identity_tests {
+ use super::*;
+ #[test]
+ fn language_requests_do_not_fall_back() {
+  assert!(accepts_language("en","en-US"));assert!(!accepts_language("en","de"));
+  assert!(accepts_language("de","de-DE"));assert!(!accepts_language("de","en"));assert!(!accepts_language("de","auto"));
+ }
+ #[test]
+ fn describe_advertises_only_selected_language() {
+  let c=Config {model_root:std::path::PathBuf::new(),auto_download:false,custom_model_path:None,model:models::Model::Community128.for_language("en").unwrap(),host:"127.0.0.1".into(),port:10300,num_threads:1,language:"en".into(),log_level:"warn".into()};
+  let v=info(&c);assert_eq!(v["asr"][0]["models"][0]["languages"],json!(["en"]));assert!(v["asr"][0]["models"][0]["description"].as_str().unwrap().contains("en/community-128"));
+ }
+}
+
+#[cfg(test)]
+mod custom_identity_tests {
+ use super::*;
+ #[test]
+ fn custom_describe_does_not_claim_banafo_provenance() {
+  let c=Config{model_root:std::path::PathBuf::new(),auto_download:false,custom_model_path:None,model:models::Model::parse("custom/german-zipformer").unwrap(),host:"127.0.0.1".into(),port:10300,num_threads:1,language:"de".into(),log_level:"warn".into()};
+  let v=info(&c);assert_eq!(v["asr"][0]["models"][0]["name"],"custom/german-zipformer");assert_eq!(v["asr"][0]["models"][0]["attribution"]["name"],"External custom model");
+ }
+}

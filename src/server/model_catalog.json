@@ -1,0 +1,139 @@
+{
+  "revision": "d45212aeb212dd66083dd22710c9954f40ff8cc1",
+  "source": "https://huggingface.co/Banafo/Kroko-ASR",
+  "models": [
+    {
+      "language": "de",
+      "model": "community-128",
+      "filename": "Kroko-DE-Community-128-L-Streaming-001.data",
+      "bytes": 155836296,
+      "sha256": "8d39babf998aba69446b1c1e3ac780bf5f90887ad95b0d60eb4bd79d63998462"
+    },
+    {
+      "language": "de",
+      "model": "community-64",
+      "filename": "Kroko-DE-Community-64-L-Streaming-001.data",
+      "bytes": 155839333,
+      "sha256": "0013d4b3e1216b4e0c15f18f345aa58ca8bb2cdbeff7a7d55a513f6b400862a5"
+    },
+    {
+      "language": "en",
+      "model": "community-128",
+      "filename": "Kroko-EN-Community-128-L-Streaming-001.data",
+      "bytes": 155836304,
+      "sha256": "095f7ea4bd879b4308b6b6a4db47e3993c38f863a593fa61fd5586798e514fc1"
+    },
+    {
+      "language": "en",
+      "model": "community-64",
+      "filename": "Kroko-EN-Community-64-L-Streaming-001.data",
+      "bytes": 155839341,
+      "sha256": "59a1e64cfbe33d35096f69056c484f02778a5d2c0c95016d3e2948588fc72e9c"
+    },
+    {
+      "language": "es",
+      "model": "community-128",
+      "filename": "Kroko-ES-Community-128-L-Streaming-001.data",
+      "bytes": 155836470,
+      "sha256": "948747a3da9306f2b7e129620461adf41dccf0487575c8897f065d54d23ad015"
+    },
+    {
+      "language": "es",
+      "model": "community-64",
+      "filename": "Kroko-ES-Community-64-L-Streaming-001.data",
+      "bytes": 155839507,
+      "sha256": "7b28a828ce99c8053fc6d1d44acb9ff7f2597ae878b565a2609337170ac1f240"
+    },
+    {
+      "language": "fr",
+      "model": "community-128",
+      "filename": "Kroko-FR-Community-128-L-Streaming-001.data",
+      "bytes": 155836281,
+      "sha256": "40e7a7b949f4ea44d00ae6206023407eaaab9fd04835503ec6d54f99635ce82f"
+    },
+    {
+      "language": "fr",
+      "model": "community-64",
+      "filename": "Kroko-FR-Community-64-L-Streaming-001.data",
+      "bytes": 155839318,
+      "sha256": "1af97abc84f28c6765e50d62307d1ac477b50e7fc2e62d6704d6288e7c863d80"
+    },
+    {
+      "language": "it",
+      "model": "community-128",
+      "filename": "Kroko-IT-Community-128-L-Streaming-001.data",
+      "bytes": 155836193,
+      "sha256": "5ca623167ca622f2cf4b2f2eecf4442024f7a1ddf98555491424d51c9b5a18d5"
+    },
+    {
+      "language": "it",
+      "model": "community-64",
+      "filename": "Kroko-IT-Community-64-L-Streaming-001.data",
+      "bytes": 155839229,
+      "sha256": "e74cd91f89970639476353cfb7ba5044da10e36d8fb99c3a7a41c8b7c253726d"
+    },
+    {
+      "language": "he",
+      "model": "community-128",
+      "filename": "Kroko-IW-Community-128-L-Streaming-001.data",
+      "bytes": 155836415,
+      "sha256": "373d6464f0bd39a3fc4d73fe9e416711885605663b99ff54b03a9dcc946f2686"
+    },
+    {
+      "language": "he",
+      "model": "community-64",
+      "filename": "Kroko-IW-Community-64-L-Streaming-001.data",
+      "bytes": 155839452,
+      "sha256": "1a3542a9cba5e80b73b94815cba3cae4567565c37015cc2aeeaa5c59afcacdaf"
+    },
+    {
+      "language": "nl",
+      "model": "community-128",
+      "filename": "Kroko-NL-Community-128-L-Streaming-001.data",
+      "bytes": 155836324,
+      "sha256": "14d5e6b84a917125c813972bd034089b2b491729472ac7e55e6146abf2f2ba4e"
+    },
+    {
+      "language": "nl",
+      "model": "community-64",
+      "filename": "Kroko-NL-Community-64-L-Streaming-001.data",
+      "bytes": 155839361,
+      "sha256": "df37f612613d3e18ee339df8a24c196f0990e5889d725ea8160acc8f65504182"
+    },
+    {
+      "language": "pt",
+      "model": "community-128",
+      "filename": "Kroko-PT-Community-128-L-Streaming-001.data",
+      "bytes": 155836324,
+      "sha256": "ae56d9fb9ade6363f11848b5e17126fe272c10e2d0c8a894a2bca8c66c3448be"
+    },
+    {
+      "language": "pt",
+      "model": "community-64",
+      "filename": "Kroko-PT-Community-64-L-Streaming-001.data",
+      "bytes": 155839360,
+      "sha256": "36c4a92f25c9243cbd8f007cfc624b09986debf2919a1e397891e62e063d0e61"
+    },
+    {
+      "language": "sv",
+      "model": "community-64",
+      "filename": "Kroko-SV-Community-64-L-Streaming-001.data",
+      "bytes": 155837787,
+      "sha256": "e987a6909225c7fe939f75dcfbce8f387bd607b1da6849b5f4f6b2cde44afa6d"
+    },
+    {
+      "language": "tr",
+      "model": "community-128",
+      "filename": "Kroko-TR-Community-128-L-Streaming-001.data",
+      "bytes": 155835509,
+      "sha256": "7db516729a65f5893f746512eea7846dbc8e9f089e9e583057a70f6b68794732"
+    },
+    {
+      "language": "tr",
+      "model": "community-64",
+      "filename": "Kroko-TR-Community-64-L-Streaming-001.data",
+      "bytes": 155838546,
+      "sha256": "2f75336ba36b2464bcf062f7f6c8611fe2539cab17351ed7ed4ee1a03ed437a4"
+    }
+  ]
+}

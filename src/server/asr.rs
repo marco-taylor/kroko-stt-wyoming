@@ -17,11 +17,15 @@ pub fn cpu_s() -> f64 {
 pub fn rss_kib() -> Option<u64> {
     std::fs::read_to_string("/proc/self/status").ok()?.lines().find(|l| l.starts_with("VmRSS:"))?.split_whitespace().nth(1)?.parse().ok()
 }
-pub struct Engine { pub recognizer: OnlineRecognizer, tail_samples: usize, _model_lease: crate::model_manager::Lease }
+pub struct Engine { pub recognizer: OnlineRecognizer, tail_samples: usize, stream_language: Option<String>, _model_lease: crate::model_manager::Lease }
 impl Engine {
     pub fn load(config: &Config) -> Result<Self, String> {
-        eprintln!("Kroko model: {}", config.model.key());
-        let prepared=crate::model_manager::prepare(&config.model_root,&config.model,config.auto_download)?;
+        eprintln!("Kroko model: {}", config.model.identity());
+        let prepared = if let Some(path) = &config.custom_model_path {
+            crate::model_manager::prepare_data(&config.model_root, &config.model, path)?
+        } else {
+            crate::model_manager::prepare(&config.model_root, &config.model, config.auto_download)?
+        };
         let path = |role: &str| -> Result<String,String> {
             let f=prepared.manifest.files.iter().find(|f|f.role==role).ok_or_else(||format!("Missing model role {role}"))?;
             prepared.directory.join(&f.path).to_str().map(str::to_owned).ok_or_else(||"Model path must be UTF-8".into())
@@ -32,12 +36,12 @@ impl Engine {
         c.model_config.transducer.joiner = Some(path("joiner")?);
         c.model_config.tokens = Some(path("tokens")?);
         c.model_config.provider = Some("cpu".into()); c.model_config.num_threads = config.num_threads;
-        c.feat_config.sample_rate = 16000; c.feat_config.feature_dim = 80;
+        c.feat_config.sample_rate = 16000; c.feat_config.feature_dim = prepared.manifest.feature_dim;
         c.decoding_method = Some("greedy_search".into()); c.enable_endpoint = false;
         let start = Instant::now();
         let recognizer = OnlineRecognizer::create(&c).ok_or_else(|| "Cannot create Kroko OnlineRecognizer; see native diagnostics".to_string())?;
-        log(config,"info",json!({"event":"model_loaded","load_s":start.elapsed().as_secs_f64(),"rss_kib":rss_kib(),"threads":config.num_threads,"sherpa_version":sherpa_onnx::version(),"onnxruntime_version":sherpa_onnx::onnxruntime_version(),"model":config.model.key(),"model_dir":prepared.directory,"revision":prepared.manifest.version}));
-        Ok(Self { recognizer, tail_samples:prepared.manifest.tail_samples, _model_lease:prepared.lease })
+        log(config,"info",json!({"event":"model_loaded","load_s":start.elapsed().as_secs_f64(),"rss_kib":rss_kib(),"threads":config.num_threads,"sherpa_version":sherpa_onnx::version(),"onnxruntime_version":sherpa_onnx::onnxruntime_version(),"model":config.model.key(),"language":config.language,"identity":config.model.identity(),"model_dir":prepared.directory,"revision":prepared.manifest.version}));
+        Ok(Self { recognizer, tail_samples:prepared.manifest.tail_samples, stream_language:prepared.manifest.stream_language, _model_lease:prepared.lease })
     }
 }
 // Stream must be dropped before the guard releases exclusive recognizer access.
@@ -60,6 +64,7 @@ pub struct Session<'a> {
 impl<'a> Session<'a> {
     pub fn new(engine: MutexGuard<'a,Engine>, id:u64, log_aborts:bool) -> Self {
         let stream = engine.recognizer.create_stream();
+        if let Some(language)=&engine.stream_language { stream.set_option("language",language); }
         Self { stream,engine,id,samples:0,chunks:0,decodes:0,pending_byte:None,previous:String::new(),start:Instant::now(),cpu_start:cpu_s(),last_chunk:None,finished:false,log_aborts,last_progress_samples:0 }
     }
     fn drain(&mut self, config:&Config, after_eof:bool) {

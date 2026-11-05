@@ -135,8 +135,10 @@ not only SPDX metadata, when assembling distribution notices.
 
 The new manager downloads missing Community packages directly from the pinned
 Banafo repository, as explicitly selected by the user/default new-install profile.
-It retains the original package and records source, revision, checksum and the
-provider's CC-BY-SA statement without assigning an unverified CC version.
+It records source, revision, checksum and the provider's CC-BY-SA statement
+without assigning an unverified CC version. In v0.3.0, a built-in free Community package is removed only after its prepared
+components have been completely verified and published persistently. Custom
+source packages and unsupported package formats are not covered by this cleanup.
 Classic and Custom models remain local-only. This changes installation behavior,
 not the unresolved parts of the model-license assessment above. No weights are
 added to images, Git repositories or release assets.
@@ -147,3 +149,14 @@ permissive license notices continue to be collected by the existing image licens
 step. No new Rust package version or additional native inference library is
 introduced. Dependency inventories include these packages already; linkage role
 must be considered when reviewing the new image before any future publication.
+
+## Multilingual Community models
+
+The development catalogue pins exact upstream filenames and checksums for
+Community packages in German, English, Spanish, French, Italian, Hebrew, Dutch,
+Portuguese, Swedish and Turkish. The Community attribution above identifies the
+German default; other selected packages retain their own identity and source in
+the installation record. The provider is Banafo / Kroko ASR, the source remains
+[Banafo/Kroko-ASR](https://huggingface.co/Banafo/Kroko-ASR), and the Community
+statement remains **CC-BY-SA, upstream version unspecified**. Do not infer a
+version or broader model-specific grant from the catalogue.

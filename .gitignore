@@ -51,3 +51,16 @@ __pycache__/
 /KROKO_MODEL_MANAGER_IMPLEMENTATION.md
 /KROKO_MODEL_MANAGER_UNRAID_ACCEPTANCE.md
 /docs/kroko-data-loader-analysis.md
+
+# Private investigations and release acceptance records; never publish
+/*_RESULTS.md
+/SSH_*.md
+/KROKO_V0_2_0_RELEASE.md
+/KROKO_V0_3_0_RELEASE.md
+/*_IMPLEMENTATION.md
+/*_ACCEPTANCE.md
+/secrets/
+**/secrets/
+pro-license.conf
+*.key
+*.pem

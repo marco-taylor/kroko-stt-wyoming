@@ -1,9 +1,9 @@
 [package]
-name = "kroko-stt-german-wyoming"
-version = "0.2.0"
+name = "kroko-stt-wyoming"
+version = "0.3.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "German streaming speech-to-text with Kroko, sherpa-onnx, Rust and Wyoming"
+description = "Multilingual streaming speech-to-text with Kroko, sherpa-onnx, Rust and Wyoming"
 autobins = false
 autoexamples = false
 [dependencies]

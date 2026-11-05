@@ -1,266 +1,267 @@
-# Modelle installieren und verwalten
+# Modelle: Sprache, Installation und Migration
 
-## Community-128 automatisch
+Ab v0.3.0: sprachgetrennte Modellverwaltung. Bestehende deutsche v0.2.0-
+Installationen werden ohne erzwungene Migration weiterverwendet.
 
-Für eine Neuinstallation **Community-128 auswählen**, einen persistenten Appdata-
-Modellordner nach `/models` **schreibbar** einbinden und den Container starten.
-Fehlt das Modell, lädt der Rust Model Manager das offizielle Banafo-Paket,
-prüft die feste SHA256 und bereitet es einmalig für sherpa-onnx vor.
-Danach startet Wyoming. Beim nächsten Start wird das vorhandene Modell geprüft
-und ohne Download verwendet. Es werden keine Gewichte im Image ausgeliefert.
+## Auswahl und unterstützte Kombinationen
 
-Diese Anleitung beschreibt v0.2.0. Das öffentliche Image ist unter
-`ghcr.io/marco-taylor/kroko-stt-german-wyoming:0.2.0` sowie `:latest` verfügbar.
-Eine bestehende v0.1.0-Installation erhält die neue Funktion durch ein
-Image-Update mit beibehaltener Konfiguration, nicht durch einen bloßen Neustart.
+`LANGUAGE` und `KROKO_MODEL` bilden eine Identität. `MODEL` ist ein gleichwertiger
+Alias; beide Variablen dürfen nicht widersprüchlich gesetzt sein.
 
-Community-128 erreichte im separaten 100-Aufnahmen-/Drei-Wiederholungen-Vergleich
-7,28 % WER, Classic 7,85 %. Der kleine Punktwertvorteil ist keine Garantie für
-andere Aufnahmen; Community-128 benötigt mehr CPU/RAM und besitzt einen internen
-Schritt von 2,56 s statt 1,28 s. Das ist der bewusst gewählte Qualitätsstandard
-für **Neuinstallationen**, kein automatischer Wechsel vorhandener Classic-Nutzer.
+```text
+LANGUAGE=en
+MODEL=community-128
+MODEL_DIR=/models
+```
 
-## Auswahl und Verzeichnisse
+Die Instanz verwendet genau dieses Modell. Kein automatisches Erkennen der
+Audiosprache und kein Laden aller Varianten. Ein Modell-/Sprachwechsel erfordert
+geänderte Containerumgebung und Neuerstellen des eigenen Containers. Persistente
+Gewichte bleiben erhalten; ein bloßer Neustart ändert die Umgebung nicht.
 
-`MODEL_DIR` bezeichnet weiterhin den übergeordneten Modellordner.
-`KROKO_MODEL` bleibt erhalten; alternativ ist `MODEL` möglich, beispielsweise
-`MODEL=custom/my-german-model`. Bei widersprüchlichen Werten startet der Server
-nicht. Ein Modellwechsel erfordert eine geänderte Containerkonfiguration,
-nicht nur `docker restart`.
+Der eingebettete [Katalog](../src/server/model_catalog.json) enthält ausschließlich
+geprüfte Dateinamen, Größen und Paket-SHA256 vom offiziellen Banafo-Repository,
+Revision `d45212aeb212dd66083dd22710c9954f40ff8cc1`:
+
+| LANGUAGE | Sprache | Community-64 | Community-128 |
+| --- | --- | --- | --- |
+| `de` | Deutsch | angeboten | angeboten |
+| `en` | Englisch | angeboten | angeboten |
+| `es` | Spanisch | angeboten | angeboten |
+| `fr` | Französisch | angeboten | angeboten |
+| `it` | Italienisch | angeboten | angeboten |
+| `he` | Hebräisch, Anbieter-Dateicode `IW` | angeboten | angeboten |
+| `nl` | Niederländisch | angeboten | angeboten |
+| `pt` | Portugiesisch | angeboten | angeboten |
+| `sv` | Schwedisch | angeboten | **nicht angeboten** |
+| `tr` | Türkisch | angeboten | angeboten |
+
+Dies ist eine Angebots-/Katalogmatrix, keine Genauigkeitsgarantie und keine
+Behauptung, dass jedes Modell bereits nativ getestet wurde. Tatsächlich geprüfte
+Kombinationen sind im lokalen Testbericht ausgewiesen. Nicht im Katalog vorhandene
+Kombinationen, insbesondere `en + classic` oder `sv + community-128`, werden
+abgewiesen. Niemals stillschweigender Rückfall auf Deutsch oder eine andere Variante.
+
+Primäre zweistellige Sprachcodes werden kleingeschrieben. Regionale Aliase wie
+`de-DE` oder `en-US` verwenden dieselbe primäre Modellidentität. `iw` wird nach
+`he` normalisiert. Das erzeugt keine regional spezialisierten Modelle.
+`LANGUAGE` ist unabhängig von der Sprache der Benutzeroberfläche.
+
+## Persistente Ablage und erster Start
 
 ```text
 /models/
-  community-128/
-    Kroko-DE-Community-128-L-Streaming-001.data
-    encoder.onnx
-    decoder.onnx
-    joiner.onnx
-    tokens.txt
-    installation.json
-  community-64/
-  classic/
-  custom/
-    my-german-model/
-      model.json
+  de/
+    community-128/
       encoder.onnx
       decoder.onnx
       joiner.onnx
       tokens.txt
+      model.json
+      installation.json
+    community-64/
+    classic/
+    custom/
+      example/
+  en/
+    community-128/
+    community-64/
+    custom/
 ```
 
-Ohne explizite Auswahl wird ein vorhandener Classic-Ordner zuerst erkannt, damit
-bestehende Installationen ihren bisherigen Standard behalten. Danach kommen
-vorhandenes Community-128 und Community-64. Ist nichts vorhanden, gilt
-Community-128. Auch unvollständiges Classic wird nicht durch einen stillen
-Download eines anderen Modells umgangen. Das neue Unraid-Template wählt
-Community-128 ausdrücklich; bestehende gespeicherte Templates mit
-`KROKO_MODEL=classic` behalten ihre Auswahl.
+Manuell gelieferte Community-Pakete und zunächst leere dedizierte Modellordner
+können Komponenten auch unter `.runtime/<paket-sha256>/` innerhalb dieses
+sprachgebundenen Modellordners vorbereiten. Sprache bleibt Teil des Elternpfads.
+Verschiedene Sprachen verwenden keine gemeinsame Cache-Ablage, selbst wenn
+Dateinamen oder Komponentenbytes ähnlich sein sollten.
 
-## Was bei jedem Start passiert
+Für eine Neuinstallation mit dem v0.3.0: Sprache und Modell wählen,
+einen persistenten Modellordner schreibbar für UID 99/GID 100 nach `/models`
+einbinden und starten. `MODEL_AUTO_DOWNLOAD=true` lädt nur ein fehlendes,
+ausgewähltes Community-Paket aus dem offiziellen gepinnten Katalog.
+Keine erfundenen URLs, keine Drittanbieter-Mirrors, keine vorsorglichen Downloads
+von Community-64 bei gewähltem Community-128.
 
-1. Lokales Modell suchen, einschließlich unterstützter Classic-Legacypfade.
-2. Alle erforderlichen Dateien prüfen: vorhanden, regulär, nicht leer, erlaubte
-   Größe, bekannte SHA256; zusätzlich ONNX-Protobuf-Hülle und Tokenformat.
-3. Vollständiges Modell unverändert verwenden. Keine Downloads, Updates,
-   Markierungsdateien oder Rechteänderungen bei diesem normalen lokalen Start.
-4. Lokales gültiges Community-Paket bei Bedarf einmalig bytegenau bereitstellen.
-5. Nur ein fehlendes Community-Modell bei `MODEL_AUTO_DOWNLOAD=true` herunterladen.
-6. sherpa-onnx lädt die Graphen und prüft ihre tatsächliche Runtime-Kompatibilität,
-   bevor der TCP-Listener startet.
+Die Vorbereitung prüft Paket-SHA256, Größe, freien Header und Sprache,
+Blockgrenzen, Komponenten, Tokenformat und ONNX-Hülle. Die Export-Metadaten des
+Encoders liefern die tatsächliche Schrittweite; keine Ableitung aus `64` oder
+`128` im Namen. Der automatische Pfad unterstützt die nachgewiesene Zipformer2-
+Exportform Version 1 mit `decode_chunk_len=128/256` und `T=Schritt+13`.
+Für diese Formen gilt der bereits validierte Silence-Tail von Schritt+16
+Featureframes. Andere Exportformen benötigen ein explizites Custom-Manifest.
+Die interne Modell-Schrittweite wird nicht durch Konfiguration verändert.
 
-Ungültige oder teilweise vorhandene Komponenten führen zu einer Fehlermeldung
-mit Ursache und Pfad. Es gibt kein automatisches Löschen, Ersetzen oder Reparieren.
-Eine Prüfsumme identifiziert die ausgewählte Revision; sie erteilt keine Lizenz.
+Neue Pakete und Komponenten entstehen zunächst in einem privaten Staging-Ordner.
+Nur vollständige geprüfte Ergebnisse werden atomar ohne Ersetzung veröffentlicht.
+Danach werden die Komponenten erneut verifiziert und **erst dann** das freie
+Community-Paket entfernt. `model.json` hält gemessene Komponenten-Hashes und
+Exportparameter fest; `installation.json` bindet Sprache, Modell und Paket-SHA.
+Bei späteren Starts werden diese Dateien wiederverwendet: kein Download und
+keine erneute Extraktion.
 
-## Originalformat und einmalige Vorbereitung
+Bei fehlgeschlagener Vorbereitung nach einem abgeschlossenen Download bleibt das
+Paket im privaten Staging-Bereich zur Untersuchung erhalten. Es gilt niemals als
+installiertes Modell. Eine Fehlermeldung nennt den Ort. Unterbrochene/unvollständige
+Downloads werden nicht als fertige Pakete veröffentlicht. Kein automatisches
+Überschreiben, Löschen oder Reparieren bestehender Komponenten.
 
-Die bestehende sherpa-C-API erwartet vier Dateien und unterstützt die offiziellen
-Kroko-Pakete nicht direkt. Deshalb behält der Manager das originale `.data`-Paket
-**unverändert** und kopiert dessen vier Komponenten einmalig bytegenau heraus.
-Keine ONNX-Konvertierung, Quantisierung oder neue Inferenz-Runtime.
+## v0.2.0 wiederverwenden
 
-Bei einer automatischen Neuinstallation werden Paket und Komponenten zusammen
-im neuen Modellordner atomar bereitgestellt. Wer nur ein lokales `.data`-Paket
-kopiert, erhält die Komponenten unter `.runtime/<Paket-SHA256>/` innerhalb dieses
-Modellordners. Auch ein zunächst leerer Modell-Unterordner kann diese Cacheform
-verwenden. Beim Neustart wird der Cache geprüft und wiederverwendet.
+Bestehende deutsche Modelle werden ohne obligatorische Migration erkannt:
 
-Bereits vorhandene vollständige ONNX-/Token-Komponenten haben Vorrang und brauchen
-weder Paket noch Cache. Ein zusätzliches unbenutztes `.data`-Paket wird dann nicht
-zur Voraussetzung gemacht. Unvollständige Komponenten werden nicht aus einem
-Paket ergänzt: zuerst den Konflikt prüfen und bewusst beheben.
+- `/models/community-128/` und `/models/community-64/`;
+- `/models/classic/`;
+- das bisherige lange Classic-Exportverzeichnis;
+- flache Classic-Komponenten direkt in `MODEL_DIR`;
+- `/models/custom/<name>/` mit deutschem Manifest.
 
-## Community-64 optional
+Diese Legacy-Suche gilt **nur für Deutsch**. Bei Englisch wird niemals ein altes
+deutsches Modell als vorhandenes englisches Modell behandelt. Eine vorhandene
+neue sprachgetrennte Ablage hat Vorrang; ist sie ungültig, wird nicht heimlich auf
+ein anderes Modell zurückgegriffen. Ohne explizite Auswahl bleibt vorhandenes
+deutsches Classic vorrangig. Eine gewählte Sprache wird nicht automatisch gewechselt.
 
-`KROKO_MODEL=community-64` setzen. Bei fehlendem Modell gilt derselbe sichere
-Originaldownload wie für Community-128. Alternativ das originale Paket
-`Kroko-DE-Community-64-L-Streaming-001.data` lokal im entsprechenden Modellordner
-bereitstellen. Nur das ausgewählte Modell wird geladen.
+Gültige alte ONNX-Komponenten werden direkt verwendet; kein neuer Download und
+kein Verschieben nötig. Ein zusätzliches korrekt identifiziertes freies Community-
+Paket kann nach Verifizierung entfernt werden, wenn das Modellverzeichnis
+schreibbar und nicht durch einen anderen Nutzer gesperrt ist. Bei read-only oder
+belegtem Verzeichnis bleibt diese redundante Kopie erhalten; der Start bleibt
+möglich. Ungültige zusätzliche Pakete werden nicht gelöscht.
 
-## Classic manuell
+Classic bleibt nur `de`, lokal/manuell, ohne automatischen Download. Die bekannten
+Classic-SHA256 bleiben unverändert. Eine neue Version benennt vorhandene Container,
+Mounts oder gespeicherte Unraid-Templates nicht selbst um.
 
-`KROKO_MODEL=classic` setzen und die vorhandenen, passenden vier Dateien in
-`/models/classic/` verwenden. **Classic wird niemals automatisch heruntergeladen.**
-Fehlt es, nennt die Fehlermeldung die benötigten Dateien und den Zielordner.
+## Offline und read-only
 
-Bereits funktionierende Pfade bleiben unterstützt:
+`MODEL_AUTO_DOWNLOAD=false` verhindert automatische Downloads beim Serverstart.
+Ein vollständiges lokales Modell startet unabhängig davon ohne Internet.
+Nach erfolgreicher Vorbereitung funktionieren Komponenten mit read-only Modellmount.
+Die erste Vorbereitung benötigt Schreibrechte. Diagnosebefehle schreiben nichts.
+Der Container läuft weiterhin als UID 99/GID 100, CPU only, normalerweise ein Thread.
+Keine automatische globale Rechte-Reparatur und kein `chmod 777`.
 
-- `/models/classic/` mit den vier bisherigen Dateien;
-- `/models/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06/`;
-- die vier Dateien direkt unter dem als `MODEL_DIR` konfigurierten Verzeichnis.
+## Custom Models
 
-Keine Verschiebung oder Umbenennung ist für diese bestehenden Exporte nötig.
-Die SHA256 des bekannten Classic-Exports bleiben unverändert in
-[src/server/models.rs](../src/server/models.rs).
-Andere eigene Exporte gehören unter eine Custom-ID, nicht unter `classic`.
-Die Classic-Gewichtslizenz bleibt ungeklärt; keine freie Weiterverteilung oder
-Lizenzfreigabe durch dieses Projekt.
-Der [historische Originalexport](https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06/tree/887db3d083240198c2d2b99fb66cfcfe6948ced8)
-bleibt als Herkunft dokumentiert; ein Link erteilt keine Nutzungsrechte.
+Vorbereitete Modelle: `/models/<sprache>/custom/<name>/model.json` und die darin
+benannten Komponenten. Beispiel: [Custom-Manifest](examples/custom-model.json).
+`language` muss zu `LANGUAGE` passen. Vier Rollen: Encoder, Decoder, Joiner und
+Tokens; relative sichere Pfade und optional SHA256. German-spezifische Beispiele
+sind Beispiele, kein globaler Sprachzwang. Symlinks und Traversal werden abgewiesen.
 
-## Offline und manuelle Installation
+Freie lokale Kroko-Pakete ausdrücklich auswählen:
 
-Vorhandene vollständige Modelle werden ohne Netzwerk verwendet, auch wenn der
-Download grundsätzlich aktiviert ist. Mit `MODEL_AUTO_DOWNLOAD=false` wird auch
-bei fehlendem Modell kein automatischer Netzwerkzugriff versucht.
+```text
+LANGUAGE=de
+MODEL=custom/local-package
+CUSTOM_MODEL_PATH=/models/Kroko-DE-Community-128-L-Streaming-001.data
+```
 
-Entweder die vier passenden Komponenten kopieren oder das offizielle Community-
-Paket im jeweiligen Modellordner ablegen. Für ein reines Paket braucht die
-**erste** Vorbereitung dort Schreibrechte. Bereits vollständige Komponenten und
-fertige Caches funktionieren auch mit einem read-only Modellmount.
-Symlinks innerhalb der Modellpfade werden aus Sicherheitsgründen abgewiesen;
-reale Dateien oder ein Volume-/Bind-Mount verwenden. Das explizit konfigurierte
-Wurzelverzeichnis darf selbst auf persistenten Storage zeigen.
+Es wird nur diese Datei verwendet, auch wenn weitere `.data`-Dateien vorhanden
+sind. Bekannte katalogisierte Pakete übernehmen verifizierte Parameter; andere
+freie Exporte benötigen ein sprachlich passendes Manifest. Keine manuelle
+Komponentenextraktion durch den Benutzer. Der Cache liegt sprachgetrennt unter
+`/models/<sprache>/custom/<name>/.runtime/<paket-sha256>/`.
 
-## Custom-Modelle
+**Manuelle Custom-Originale bleiben erhalten** und werden beim Neustart zur
+Validierung benötigt. Der automatische Community-Cleanup löscht sie nicht.
+`CUSTOM_MODEL_PATH` muss für normale Built-in-Profile und bereits vorbereitete
+ONNX-Custom-Modelle leer sein. Ein Dateipfad muss innerhalb `MODEL_DIR` liegen;
+ein Hostpfad oder Verzeichnis genügt nicht. Mehrere Dateien werden nie automatisch
+erraten. Unbekannte Backends werden diagnostiziert, aber nicht automatisch gestartet.
 
-Eigene Modelle liegen unter `/models/custom/<name>/`; Namen dürfen ASCII-Buchstaben,
-Ziffern, Bindestrich und Unterstrich enthalten. Dort eine lokale `model.json`
-und die darin genannten Dateien ablegen. Ausgangspunkt:
-[docs/examples/custom-model.json](examples/custom-model.json).
+## Nemotron 3.5 als vorbereitetes Custom-Modell
 
-Das einfache Schema enthält ID, Anzeigename, Sprache, Modelltyp, Format, Backend,
-Version, Lizenz, vier Rollen mit relativen Pfaden und optionalen SHA256 sowie
-`tail_samples`. Für echte Integritätskontrolle die Hashes eintragen; `null` prüft
-nur Existenz und Format. Pfadtraversal, absolute Dateipfade, doppelte Rollen,
-Symlinks und reservierte Dateinamen werden abgewiesen.
+Ab v0.3.0 können die offiziellen multilingualen
+sherpa-onnx-Nemotron-3.5-Streaming-INT8-Exporte über dasselbe Custom-Manifest
+verwendet werden. Dies ist kein automatischer Nemotron-Installer. Die vier Dateien
+bleiben unverändert unter ihren Originalnamen im ausgewählten Custom-Ordner:
 
-Die vorhandene Runtime kann `zipformer`-/`zipformer2`-Streaming-Transducer mit
-80 Filterbankkanälen, 16 kHz, Blank-ID 0 und den vier Rollen `encoder`, `decoder`,
-`joiner`, `tokens` laden. Der tatsächliche ONNX-Graph muss dazu passen.
-`tail_samples` muss zum Export passen und ein Vielfaches von 320 zwischen 320
-und 160000 sein; der Beispielwert ist **keine** allgemeine Modellgarantie.
-Decoder und CPU-Einstellungen bleiben unverändert: Greedy, standardmäßig ein
-Inferenzthread. Eine neue ASR-Runtime wird nicht installiert.
+```text
+/models/de/custom/nemotron-560/model.json
+/models/de/custom/nemotron-560/encoder.int8.onnx
+/models/de/custom/nemotron-560/decoder.int8.onnx
+/models/de/custom/nemotron-560/joiner.int8.onnx
+/models/de/custom/nemotron-560/tokens.txt
+```
 
-Andere deklarierte Backends/Formate können bereits als lokale Manifest-/Dateisätze
-geprüft werden. Der Server weist sie mit einer klaren Meldung als nicht unterstützt
-zurück. `runtime_compatible` in der CLI ist eine deklarative Einordnung, kein
-vorgezogener nativer Graph-Ladetest. Nur der Serverstart bestätigt das tatsächliche
-Laden. Custom-Modelle werden niemals automatisch aus einer Manifest-URL geladen;
-`source` dokumentiert lediglich die Herkunft.
+`LANGUAGE=de-DE`, `MODEL=custom/nemotron-560` und `MODEL_AUTO_DOWNLOAD=false`
+auswählen; `CUSTOM_MODEL_PATH` bleibt leer. Die Modellwurzel bleibt `/models`.
+Für 1120 ms einen separaten Custom-Namen und den entsprechenden Export verwenden.
+Quellen und angebotene Exporte: [offizielle sherpa-onnx-Anleitung](https://k2-fsa.github.io/sherpa/onnx/nemo/nemotron-streaming.html).
 
-## Prüfen und Status
+Zusätzlich zu den bisherigen Manifestfeldern werden benötigt:
 
-Die CLI liegt im Image. Vom Unraid-/Docker-Host aus aufrufen;
-`YOUR_KROKO_CONTAINER` durch den eigenen Containernamen ersetzen.
-Das Distroless-Image enthält keine Shell und benötigt keine Container-Konsole:
+```json
+{
+  "model_type": "nemo_transducer",
+  "feature_dim": 128,
+  "stream_language": "de-DE",
+  "tail_samples": 4800
+}
+```
+
+Dies ist ein Ausschnitt, kein vollständiges Manifest. Backend und Format bleiben
+`sherpa-onnx-transducer` und `onnx-transducer`. Die vier Rollen verweisen auf die
+Originaldateien; SHA256 und die tatsächliche Modelllizenz separat eintragen.
+`nemo_transducer` bezeichnet hier unser Manifestprofil. Die native CPU-Runtime
+erkennt die NeMo-Familie selbst; sie bekommt keine erzwungene Zipformer-Kennung.
+
+Der Manager prüft tatsächliche Encoder-Metadaten, Featurezahl, Vocabulary-Größe
+und Sprach-Prompt. Der NeMo-Blank liegt am Vokabularende; er wird nicht auf null
+umgeschrieben. `stream_language` wird vor dem ersten Audioblock am Stream gesetzt.
+Der Encoder dieses Exports überschreitet 512 MiB; nur das explizite NeMo-Profil
+hat deshalb ein Dateilimit von 1 GiB. Kroko-Paketlimits bleiben unverändert.
+
+Alte Manifeste behalten standardmäßig 80 Features und keine NeMo-Sprachoption.
+Die interne Chunk-Konfiguration stammt aus dem jeweiligen Modell, nicht aus der
+Größe der eingehenden Audioblöcke. Keine beliebigen Chunkwerte erzwingen.
+Audio bleibt 16-kHz-Mono-PCM16, CPU-only, standardmäßig ein Thread und Greedy.
+Die Wyoming-Schnittstelle bleibt unverändert und liefert weiterhin finale Texte;
+interne Streaming-Partials sind keine ausgelieferten Wyoming-Partials.
+
+Erfolgreiche technische Tests sind keine pauschale N100-Geschwindigkeitsempfehlung.
+Nemotron benötigt erheblich mehr RAM und Rechenzeit als Kroko; der vollständige
+lokale Vergleich wird getrennt ausgewertet. Keine Nemotron-Gewichte werden im
+Repository oder Image mitgeliefert. Andere NeMo-/Parakeet-Exporte werden durch
+dieses gezielte Profil nicht automatisch als kompatibel freigegeben.
+
+## CLI und sichere Entfernung
+
+Die Variablen des Containers gelten auch für die CLI:
 
 ```sh
-docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager list
-docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager status
-docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager verify community-128
-docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager verify classic
-docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager verify custom/my-german-model
+docker exec YOUR_CONTAINER /usr/local/bin/model-manager list
+docker exec YOUR_CONTAINER /usr/local/bin/model-manager status
+docker exec YOUR_CONTAINER /usr/local/bin/model-manager verify community-128
+docker exec YOUR_CONTAINER /usr/local/bin/model-manager install community-128
 ```
 
-Die Ausgabe ist JSON mit Auswahl, vorhanden/gültig, Quelle `local`/`download`,
-Format, Version/Hashes, Runtime-Einordnung und Fehlerursache. `list`, `status`
-und `verify` verändern keine Modell-Dateien und benötigen kein Internet.
-`verify` beendet sich bei Fehler mit Exitcode 1. Ein gültiges lokales Paket meldet
-`needs_preparation=true`, solange sein Cache fehlt. Die nativen Graphen werden
-nicht heimlich für Diagnosebefehle geladen.
+`list`, `status`, `verify` verändern nichts und laden nichts herunter.
+`install` erlaubt ausdrücklich die Installation des gewählten Modells; es lädt
+kein Custom-Modell aus einer Manifest-URL. Für eine andere Sprache in einem
+separaten Verwaltungsaufruf `LANGUAGE` explizit setzen. `source` im Manifest ist
+nur Herkunftsinformation. `runtime_compatible` ist deklarativ; erst ein nativer
+Serverstart bestätigt tatsächliche Inferenz-Kompatibilität.
 
-Für explizite Installation außerhalb des Serverstarts, bei laufendem Container:
+`model-manager remove community-128 --yes` entfernt ausschließlich das gewählte
+Modell **der konfigurierten Sprache**, wenn es nicht aktiv verwendet wird und
+keine unbekannten Dateien enthält. Andere Sprachen, Modelle und Appdata bleiben
+erhalten. Keine pauschalen Löschbefehle. Flache gemeinsame Classic-Ablagen und
+neue manuelle Custom-Paket-Caches werden konservativ nicht automatisch entfernt.
+Ein entferntes Community-Modell wird bei weiterhin gewählter Variante und aktivem
+Auto-Download später erneut installiert; vorher die Auswahl bewusst ändern.
 
-```sh
-docker exec YOUR_KROKO_CONTAINER /usr/local/bin/model-manager install community-128
-```
+## Namen und Lizenz
 
-Dieser ausdrücklich aufgerufene Installationsbefehl darf herunterladen; der
-Umgebungsschalter steuert den **automatischen Serverstart**, nicht diesen Befehl.
-Auch `install` ersetzt keine vorhandenen ungültigen Dateien.
+Der neutrale Projekt- und neue Containername ist `kroko-stt-wyoming`.
+Die bestehende Repository-Adresse sowie Template- und Icon-Dateinamen bleiben
+für Upgrade-Kompatibilität erhalten. Der bisherige GHCR-Name bleibt als Veröffentlichungs- und Upgrade-Pfad
+erhalten; ältere versionierte Images bleiben unverändert.
+Bestehende Container, Appdata-Mounts und gespeicherte Unraid-Templates werden
+nicht automatisch umbenannt oder geändert.
 
-## Genau ein Modell entfernen
-
-Vorher den Server stoppen, der **dieses** Modell verwendet. Dann beispielsweise
-in einem separaten Container mit demselben Modellvolume ausführen:
-
-```sh
-model-manager remove community-128 --yes
-```
-
-Beispiel für ein separat gestartetes Verwaltungsprogramm unter Unraid, nachdem
-alle Container mit diesem Modell gestoppt wurden (Pfad/Image bei Bedarf anpassen):
-
-```sh
-docker run --rm --network none --read-only --user=99:100 \
-  --cap-drop=ALL --security-opt=no-new-privileges \
-  --mount type=bind,src=/mnt/user/appdata/kroko-stt-german-wyoming/models,dst=/models \
-  --entrypoint /usr/local/bin/model-manager \
-  kroko-stt-german-wyoming:local remove community-128 --yes
-```
-
-Für `list` oder `verify` genügt derselbe Aufruf mit geändertem Befehl; dafür muss
-der Server nicht gestoppt werden, und der Mount kann zusätzlich `readonly` sein.
-
-Nur das angegebene dedizierte Modellverzeichnis ist betroffen. Eine aktive
-Modellsperre verhindert das Entfernen. Enthält der Ordner unbekannte Dateien,
-Konfiguration oder Symlinks, wird vor der ersten Löschung abgebrochen.
-Geschwistermodelle, Appdata-Konfiguration und Wyoming-Daten bleiben erhalten.
-Die gemeinsame flache Classic-Legacyablage wird absichtlich nicht pauschal
-entfernt; ihre vier Dateien zuvor bei Bedarf in einen dedizierten Classic-Ordner
-verschieben. Es gibt kein globales `purge` und keine Force-Reparatur.
-Bleibt das entfernte Community-Modell ausgewählt und Auto-Download aktiv, wird es
-beim nächsten Start wieder installiert. Vorher ein anderes Modell auswählen oder
-`MODEL_AUTO_DOWNLOAD=false` setzen. Der Entfernungsbefehl ändert keine Konfiguration.
-
-## Download, Updates und Abbrüche
-
-Die einzige automatische Quelle ist das gepinnte offizielle
-[Banafo-Repository](https://huggingface.co/Banafo/Kroko-ASR/tree/d45212aeb212dd66083dd22710c9954f40ff8cc1).
-HTTPS bleibt auch bei Weiterleitungen erforderlich; der Anbieter kann seine
-Hosting-CDNs verwenden. Keine Projekt-Mirrors und kein automatisches `main`-Update.
-Der Download ist in Größe und Zeit begrenzt. Paket-SHA, Sprach-/Formatheader,
-Blockgrenzen und alle vier Komponenten-SHA werden vor Veröffentlichung geprüft.
-
-Neue Pakete liegen zuerst in einem privaten Staging-Verzeichnis auf demselben
-Volume. Erst das vollständig geprüfte Verzeichnis wird mit Linux
-`renameat2(RENAME_NOREPLACE)` atomar veröffentlicht. Auch ein gleichzeitig
-erschienener Zielordner wird nicht überschrieben. Die Funktion erfordert ein
-Linux-Dateisystem mit dieser Operation; Unraid XFS/Btrfs sind vorgesehen.
-Normale Downloadfehler entfernen nur das eigene Staging-Verzeichnis. Ein harter
-Prozess-/Hostabbruch kann ein verborgenes Staging-Verzeichnis hinterlassen;
-dieses zählt niemals als installiertes Modell und wird nicht global gelöscht.
-Ein abgebrochener Download wird nicht als fertiges Paket weiterverwendet.
-
-Container-/Image-Updates löschen keine Modelle: das gesamte Modellverzeichnis
-bleibt im persistenten Appdata-Mount. Für lokale vorhandene Modelle reicht `ro`;
-für automatische Installation, Paketvorbereitung und `remove` ist `rw` nötig.
-Der Container selbst bleibt unprivilegiert, UID 99 / GID 100, mit read-only RootFS.
-Ein vorhandener Modellordner wird nicht automatisch umberechtigt. Fehlen Rechte,
-nur den vorgesehenen Modellordner für UID 99/GID 100 schreibbar machen, keine
-pauschale Appdata-Reparatur und kein `chmod 777`.
-
-## Lizenz und Attribution
-
-Die offiziellen Quellen nennen Community-Modelle CC-BY-SA, weiterhin ohne
-nachgewiesene genaue Versionsangabe. Diese Restunsicherheit bleibt sichtbar;
-Es wird keine konkrete CC-BY-SA-Version unterstellt. Herkunft, Revision, Hash und Lizenzhinweis
-bleiben bei automatischen Installationen in `installation.json` erhalten.
-Der Download ist ein direkter Bezug vom Anbieter, keine Modellverteilung im
-Image. Classic bleibt lokal-only. Einzelheiten:
-[docs/licensing.md](licensing.md).
-
-Der Hinweis für Community-128 steht unter
-[Kroko Community model attribution](licensing.md#kroko-community-model-attribution).
+Community: CC-BY-SA, Versionsnummer vom Anbieter nicht spezifiziert.
+Classic-Rechte bleiben ungeklärt.
+Gewichte sind weder im Git-Repository noch im Containerimage enthalten.
+[Details](licensing.md).

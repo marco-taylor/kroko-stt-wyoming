@@ -487,6 +487,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroko-stt-wyoming"
+version = "0.3.0"
+dependencies = [
+ "hound",
+ "libc",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sherpa-onnx",
+ "ureq",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.190"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -545,19 +558,6 @@ checksum = "b63fbc4a50860e98e7b2aa7804ded1db5cbc3aff9193adaff57a6931bf7c4b4c"
 dependencies = [
  "adler2",
  "simd-adler32",
-]
-
-[[package]]
-name = "kroko-stt-german-wyoming"
-version = "0.2.0"
-dependencies = [
- "hound",
- "libc",
- "serde",
- "serde_json",
- "sha2",
- "sherpa-onnx",
- "ureq",
 ]
 
 [[package]]

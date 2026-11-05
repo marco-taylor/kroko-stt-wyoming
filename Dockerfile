@@ -30,8 +30,8 @@ RUN sh /opt/collect-licenses.sh \
 FROM gcr.io/distroless/cc-debian12@sha256:777e96cf322c46bc32aca926c263624c4dc8d7cf37e2fa65ba2c7e697318ebbb
 ARG VCS_REF=uncommitted
 LABEL org.opencontainers.image.source="https://github.com/marco-taylor/kroko-stt-german-wyoming" \
-      org.opencontainers.image.title="Kroko STT German Wyoming" \
-      org.opencontainers.image.version="0.2.0" \
+      org.opencontainers.image.title="Kroko STT Wyoming" \
+      org.opencontainers.image.version="0.3.0" \
       org.opencontainers.image.revision=$VCS_REF
 COPY --from=build /build/target/release/kroko-wyoming /usr/local/bin/kroko-wyoming
 COPY --from=build /build/target/release/model-manager /usr/local/bin/model-manager
