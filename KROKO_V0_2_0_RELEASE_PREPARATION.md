@@ -31,7 +31,7 @@ Der bestehende v0.1.0-Tag, Release und öffentliche Image-Tag wurden nicht verä
 | [src/server/asr.rs](src/server/asr.rs) | Vorbereitetes Modell aus Manager laden, Lease über Runtime-Lebensdauer; Inferenzparameter erhalten |
 | [src/server/main.rs](src/server/main.rs) | Gemeinsames Modul und generische Modellbeschreibung |
 | [scripts/run-local.sh](scripts/run-local.sh) | Persistenter schreibbarer Modell-Mount; Auswahl nur bei expliziter Angabe |
-| [templates/kroko-stt-german-wyoming.xml](templates/kroko-stt-german-wyoming.xml) | Community-128 für Neuinstallation, deutsche Installation-/Upgrade-Hinweise, persistenter Mount |
+| [Historische v0.2.0-Vorlage](https://github.com/marco-taylor/kroko-stt-wyoming/blob/v0.2.0/templates/kroko-stt-german-wyoming.xml) | Community-128 für Neuinstallation, deutsche Installation-/Upgrade-Hinweise, persistenter Mount |
 | [./ca_profile.xml](ca_profile.xml) | Aktualisierte CA-Beschreibung für v0.2.0 |
 | [./README.md](README.md) | Einfacher Erststart, Classic-Upgrade, Auswahlmatrix, sichere CLI-Aufrufe und Release-Notes-Link |
 | [docs/models.md](docs/models.md) | Automatische/manuelle/offline Installation, Custom, Rechte, Status, gezielte Entfernung und Lizenzhinweis |

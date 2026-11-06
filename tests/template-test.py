@@ -45,9 +45,22 @@ class TemplateContract(unittest.TestCase):
         self.assertEqual(language.text, 'de')
         self.assertNotIn('Ausschließlich Deutsch', language.get('Description'))
 
-    def test_legacy_template_url_is_only_a_compatible_alias(self):
-        self.assertEqual((ROOT / 'templates/kroko-stt-german-wyoming.xml').read_bytes(),
-                         (ROOT / 'templates/kroko-stt-wyoming.xml').read_bytes())
+    def test_exactly_one_app_and_matching_template_url(self):
+        templates = sorted((ROOT / 'templates').glob('*.xml'))
+        self.assertEqual([p.name for p in templates], ['kroko-stt-wyoming.xml'])
+        for path in templates:
+            template = ET.parse(path).getroot()
+            self.assertEqual(template.tag, 'Container')
+            self.assertEqual(template.get('version'), '2')
+            self.assertEqual(template.findtext('TemplateURL'),
+                             'https://raw.githubusercontent.com/marco-taylor/'
+                             'kroko-stt-wyoming/main/templates/' + path.name)
+
+    def test_repository_profile_is_present(self):
+        profile = ET.parse(ROOT / 'ca_profile.xml').getroot()
+        self.assertEqual(profile.tag, 'CommunityApplications')
+        self.assertTrue(profile.findtext('Profile', '').strip())
+        self.assertTrue((ROOT / 'LICENSE').is_file())
 
     def test_tailscale_is_not_added_by_this_project(self):
         self.assertFalse(any(c.get('Target') == 'CA_TS_FALLBACK_DIR' for c in self.config))

@@ -62,8 +62,18 @@ separately configured servers would naturally each hold their own selected model
 
 Keep existing container names and model volume sources when updating an existing
 installation. Do not move or delete existing files merely to match the new name.
-New installations use the neutral Appdata default. Old template/icon filenames
-remain compatibility aliases with canonical neutral links and defaults.
+New installations use the neutral Appdata default. The old icon remains a
+compatibility asset. The initial v0.3.1 source also kept a second complete XML
+template as an alias. That duplicated the app definition and its TemplateURL
+pointed at the other file, contrary to the official one-XML-per-app guidance.
+The subsequent CA-only correction removes the duplicate XML and keeps exactly
+one canonical template. Historical XML remains in existing Git tags. Saved
+container configuration and model mounts do not require relocation.
+
+See the [official CA starter repository](https://github.com/unraid/unraid-community-apps-starter)
+and [XML requirements](https://ca.unraid.net/submit/help/repository-xml).
+The duplicate definition is a verified repository defect; attributing a particular
+authenticated portal scan failure to it requires that portal's scan diagnostics.
 
 Publishing the template to GitHub does not prove that Community Applications has
 already re-indexed it. Store adoption must be verified separately. Prior versioned

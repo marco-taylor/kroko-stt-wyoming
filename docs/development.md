@@ -121,5 +121,6 @@ Do not confuse this with a newly published image or a performance benchmark.
 
 Run `python3 tests/template-test.py` from the checkout. It checks the canonical
 names and links, the language catalogue, the single persistent model mount, host
-port mapping, compatibility alias, and absence of internal HOST/PORT/MODEL_DIR
+port mapping, exactly one app XML with a matching TemplateURL, the repository
+profile, and absence of internal HOST/PORT/MODEL_DIR
 options. Runtime defaults remain in the Dockerfile and server configuration.

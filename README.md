@@ -313,8 +313,11 @@ umbenannt. Bestehende Modell-Mounts beibehalten, auch wenn deren Hostpfad noch
 `kroko-stt-german-wyoming` heißt. Keine Dateien verschieben und keinen neuen
 leeren Mount über einen vorhandenen Modellbestand legen. Classic-Auswahl beibehalten.
 GitHub leitet die frühere Repository-Adresse nach der Umbenennung weiter.
-Die alte Template-Datei und das alte Icon bleiben ausschließlich als Link-Kompatibilität
-verfügbar; die kanonische Vorlage ist `templates/kroko-stt-wyoming.xml`.
+Die alte Icon-Adresse bleibt zur Link-Kompatibilität verfügbar. Für Community
+Applications gibt es genau eine App-Vorlage: `templates/kroko-stt-wyoming.xml`.
+Ein zweites vollständiges XML als Alias ist nicht erforderlich und wird nicht
+mehr veröffentlicht. Historische Vorlagen bleiben in den bisherigen Git-Tags
+erhalten; gespeicherte Container und Modell-Mounts werden nicht geändert.
 Ältere versionierte Images und Releases werden nicht überschrieben.
 
 [Änderungen und Migration v0.3.1](docs/releases/v0.3.1.md).
