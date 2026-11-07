@@ -1,5 +1,9 @@
 # Kroko v0.2.0: Release-Vorbereitung
 
+> **Historisches Dokument:** Dieser Bericht beschreibt den damaligen Stand vor
+> v0.2.0. Genannte frühere Template- und lokale Image-Namen sind historische
+> Belege. Für aktuelle Installation und Updates gilt die [./README.md](README.md).
+
 Status: **technisches GO, vollständig zur Veröffentlichung vorbereitet**. Ausschließlich lokal vorbereitet; nicht committet,
 getaggt, gepusht oder veröffentlicht. Keine produktive Übernahme.
 

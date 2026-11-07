@@ -310,7 +310,7 @@ Die interne Ablage bleibt `/models/<sprache>/<modell>/`.
 
 Bestehende Container und gespeicherte Unraid-Konfigurationen werden **nicht**
 umbenannt. Bestehende Modell-Mounts beibehalten, auch wenn deren Hostpfad noch
-`kroko-stt-german-wyoming` heißt. Keine Dateien verschieben und keinen neuen
+`kroko-stt-german-wyoming` heißt (Legacy-Kompatibilität). Keine Dateien verschieben und keinen neuen
 leeren Mount über einen vorhandenen Modellbestand legen. Classic-Auswahl beibehalten.
 GitHub leitet die frühere Repository-Adresse nach der Umbenennung weiter.
 Die alte Icon-Adresse bleibt zur Link-Kompatibilität verfügbar. Für Community
