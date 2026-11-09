@@ -17,7 +17,14 @@ class TemplateContract(unittest.TestCase):
         self.assertEqual(self.template.findtext('Repository'),
                          'ghcr.io/marco-taylor/kroko-stt-wyoming:latest')
         for tag in ['Registry', 'Support', 'Project', 'ReadMe', 'TemplateURL', 'Icon']:
+            # Legacy-name regression: current public links must use canonical names.
             self.assertNotIn('kroko-stt-german-wyoming', self.template.findtext(tag))
+
+    def test_legacy_icon_alias_preserves_saved_template_links(self):
+        # Legacy compatibility for saved Unraid templates; not another app XML.
+        legacy = ROOT / 'icons/kroko-stt-german-wyoming.png'
+        canonical = ROOT / 'icons/kroko-stt-wyoming.png'
+        self.assertEqual(legacy.read_bytes(), canonical.read_bytes())
 
     def test_internal_constants_are_not_user_options(self):
         variables = {c.get('Target') for c in self.config if c.get('Type') == 'Variable'}

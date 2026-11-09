@@ -12,6 +12,7 @@ src/server/**
 !src/server/main.rs
 !src/server/config.rs
 !src/server/asr.rs
+!src/server/decoder.rs
 !src/server/models.rs
 !src/server/model_catalog.json
 !src/server/model_manager.rs

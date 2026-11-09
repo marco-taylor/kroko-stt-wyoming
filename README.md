@@ -16,7 +16,7 @@ keine Python-Laufzeit, keine GPU und keine zusätzliche Inferenz-Runtime.
 4. In Home Assistant **Wyoming Protocol** hinzufügen: Unraid-Hostadresse und den
    gewählten freien Host-Port eintragen; anschließend `kroko` in Assist wählen.
 
-Neuinstallation: `ghcr.io/marco-taylor/kroko-stt-wyoming:0.3.1` oder `:latest`.
+Neuinstallation: `ghcr.io/marco-taylor/kroko-stt-wyoming:0.4.0` oder `:latest`.
 Modelle liegen persistent außerhalb des Images. Neustart und Containerupdate
 laden vollständige gültige Modelle nicht erneut herunter. Nach erfolgreicher
 Installation funktionieren Start und Spracherkennung auch offline und read-only.
@@ -108,7 +108,7 @@ verwendetes Modell ist gesperrt. Den sicheren Aufruf für einen gestoppten Serve
 und die Folgen eines späteren Neustarts beschreibt
 [Ein Modell gezielt entfernen](docs/models.md#cli-und-sichere-entfernung).
 
-Release Notes: [v0.3.1](docs/releases/v0.3.1.md); [v0.3.0](docs/releases/v0.3.0.md); [v0.2.0](docs/releases/v0.2.0.md) bleibt unverändert.
+Release Notes: [v0.4.0](docs/releases/v0.4.0.md); [v0.3.1](docs/releases/v0.3.1.md); [v0.3.0](docs/releases/v0.3.0.md); [v0.2.0](docs/releases/v0.2.0.md) bleibt unverändert.
 
 ## Lokaler Docker-Build und Start
 
@@ -309,13 +309,13 @@ begründen keine Partnerschaft, Unterstützung oder Empfehlung durch diese Proje
 ### Name und Upgrade-Kompatibilität
 
 Ab v0.3.1 heißt das öffentliche Repository und Image `kroko-stt-wyoming`.
-Neuinstallationen verwenden `ghcr.io/marco-taylor/kroko-stt-wyoming:0.3.1`
+Neuinstallationen verwenden `ghcr.io/marco-taylor/kroko-stt-wyoming:0.4.0`
 und den Appdata-Default `/mnt/user/appdata/kroko-stt-wyoming/models`.
 Die interne Ablage bleibt `/models/<sprache>/<modell>/`.
 
 Bestehende Container und gespeicherte Unraid-Konfigurationen werden **nicht**
 umbenannt. Bestehende Modell-Mounts beibehalten, auch wenn deren Hostpfad noch
-`kroko-stt-german-wyoming` heißt. Keine Dateien verschieben und keinen neuen
+`kroko-stt-german-wyoming` heißt (Legacy-Kompatibilität). Keine Dateien verschieben und keinen neuen
 leeren Mount über einen vorhandenen Modellbestand legen. Classic-Auswahl beibehalten.
 GitHub leitet die frühere Repository-Adresse nach der Umbenennung weiter.
 Die alte Icon-Adresse bleibt zur Link-Kompatibilität verfügbar. Für Community

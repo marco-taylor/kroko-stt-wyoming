@@ -209,6 +209,8 @@ fn locate(root: &Path, model: &Model) -> Result<PathBuf> {
     if model.language() != "de" {
         return Ok(p);
     }
+    // Legacy compatibility: MODEL_DIR is the existing mounted root, regardless
+    // of its host directory name. Reuse German v0.2.0 layouts without migration.
     let old = safe_path(root, model.key())?;
     if exists(&old) {
         return Ok(old);
@@ -1849,6 +1851,30 @@ mod tests {
         fs::write(&encoder, [8, 8, 58, 2, 16, 1, 66, 2, 16, 12]).unwrap();
         assert!(onnx_envelope(&encoder).is_ok());
         assert!(prepare_data(&r.0, &model, &path).is_err());
+    }
+    #[test]
+    fn legacy_german_model_path_reuse_preserves_host_root_and_files() {
+        let r = root();
+        // Legacy compatibility: simulate the old host mount inside a disposable
+        // fixture, never access real Appdata or production model files.
+        let old_root = r.0.join("kroko-stt-german-wyoming/models");
+        let new_root = r.0.join("kroko-stt-wyoming/models");
+        let model = Model::parse("custom/legacy").unwrap();
+        let old_dir = old_root.join(model.key());
+        let manifest = custom(&old_dir, model.key(), "sherpa-onnx-transducer");
+        let original: Vec<_> = manifest.files.iter()
+            .map(|f| (f.path.clone(), fs::read(old_dir.join(&f.path)).unwrap()))
+            .collect();
+        for _ in 0..2 {
+            let prepared = prepare_with(&old_root, &model, true,
+                &|_, _| panic!("legacy reuse must not download")).unwrap();
+            assert_eq!(prepared.directory, old_dir);
+        }
+        for (name, bytes) in original {
+            assert_eq!(fs::read(old_dir.join(name)).unwrap(), bytes);
+        }
+        assert!(!new_root.exists());
+        assert!(!old_root.join("de").exists());
     }
     #[test]
     fn languages_have_separate_paths_and_legacy_is_de_only() {

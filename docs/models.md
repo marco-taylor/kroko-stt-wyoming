@@ -260,7 +260,11 @@ Kanonisches Repository, GHCR-Image und neue CA-Vorlage heißen ab v0.3.1
 Bestehende Container, Appdata-Mounts und gespeicherte Unraid-Templates werden
 nicht automatisch umbenannt oder geändert. Vorhandene deutsche Modelle werden
 weiter ohne Download und ohne erzwungene Migration wiederverwendet.
-Ein bisheriger Hostpfad mit `kroko-stt-german-wyoming` bleibt gültig.
+**Legacy-Kompatibilität:** Ein bisheriger Hostpfad mit
+`kroko-stt-german-wyoming` bleibt gültig.
+Das historische Icon unter `icons/kroko-stt-german-wyoming.png` bleibt als
+Legacy-Pfad für gespeicherte Unraid-Vorlagen verfügbar. Es ist keine zweite
+App-Definition; aktuelle Vorlagen verwenden ausschließlich das kanonische Icon.
 
 Community: CC-BY-SA, Versionsnummer vom Anbieter nicht spezifiziert.
 Classic-Rechte bleiben ungeklärt.
