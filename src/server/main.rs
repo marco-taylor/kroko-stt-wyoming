@@ -3,6 +3,7 @@ mod models;
 #[allow(dead_code)]
 mod model_manager;
 mod asr;
+mod decoder;
 mod config;
 mod wyoming;
 

@@ -222,13 +222,18 @@ allgemeines WAV-Transkriptionswerkzeug. Testaufnahmen werden nicht mitgeliefert.
 
 Für **Kroko Classic** empfehlen wir auf dem **Intel N100, CPU only**:
 **Greedy decoding + 20-ms input chunks + 1 CPU thread** (`NUM_THREADS=1`).
-Der Server verwendet bereits Greedy; die Audioblockgröße bestimmt der sendende
-Client. Diese Empfehlung führt keine neue Serveroption oder Beam-Konfiguration ein.
+Classic und Community-64 verwenden weiterhin Greedy. Für das offizielle deutsche
+**Community-128** ist **Modified Beam Search mit 4 aktiven Pfaden** der
+qualitätsoptimierte Standarddecoder. Die Auswahl erfolgt automatisch nach
+Sprache und Modell; andere Sprachen und Custom-Modelle behalten Greedy.
+Es gibt keinen zusätzlichen Decoder-ENV-Schalter. Die Audioblockgröße bestimmt
+der sendende Client; Streaming, Modellkontext und Finalisierung bleiben unverändert.
 
 **20 ms ist die Größe der übergebenen Audioblöcke, nicht die interne
 Modell-Schrittweite.** Classic besitzt eine feste interne Encoder-Schrittweite
 von **1,28 s**. Größere 320-ms-Eingabeblöcke erweitern den Modellkontext nicht.
-Modified Beam Search brachte im abgeschlossenen Vergleich keinen Genauigkeitsgewinn.
+Modified Beam Search brachte bei **Classic** im abgeschlossenen Vergleich keinen
+Genauigkeitsgewinn; dieser Befund gilt nicht für Community-128.
 
 ## Kroko-Classic-Decoding-Benchmark
 

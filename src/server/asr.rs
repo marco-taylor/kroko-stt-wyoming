@@ -37,7 +37,10 @@ impl Engine {
         c.model_config.tokens = Some(path("tokens")?);
         c.model_config.provider = Some("cpu".into()); c.model_config.num_threads = config.num_threads;
         c.feat_config.sample_rate = 16000; c.feat_config.feature_dim = prepared.manifest.feature_dim;
-        c.decoding_method = Some("greedy_search".into()); c.enable_endpoint = false;
+        let decoder = crate::decoder::Decoder::for_model(&config.model);
+        decoder.apply(&mut c);
+        c.enable_endpoint = false;
+        log(config,"info",json!({"event":"decoder_selected","identity":config.model.identity(),"decoding_method":decoder.method,"max_active_paths":decoder.max_active_paths,"blank_penalty":decoder.blank_penalty}));
         let start = Instant::now();
         let recognizer = OnlineRecognizer::create(&c).ok_or_else(|| "Cannot create Kroko OnlineRecognizer; see native diagnostics".to_string())?;
         log(config,"info",json!({"event":"model_loaded","load_s":start.elapsed().as_secs_f64(),"rss_kib":rss_kib(),"threads":config.num_threads,"sherpa_version":sherpa_onnx::version(),"onnxruntime_version":sherpa_onnx::onnxruntime_version(),"model":config.model.key(),"language":config.language,"identity":config.model.identity(),"model_dir":prepared.directory,"revision":prepared.manifest.version}));
