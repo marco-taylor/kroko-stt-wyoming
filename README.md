@@ -16,7 +16,7 @@ keine Python-Laufzeit, keine GPU und keine zusätzliche Inferenz-Runtime.
 4. In Home Assistant **Wyoming Protocol** hinzufügen: Unraid-Hostadresse und den
    gewählten freien Host-Port eintragen; anschließend `kroko` in Assist wählen.
 
-Neuinstallation: `ghcr.io/marco-taylor/kroko-stt-wyoming:0.4.0` oder `:latest`.
+Neuinstallation: `ghcr.io/marco-taylor/kroko-stt-wyoming:0.5.0` oder `:latest`.
 Modelle liegen persistent außerhalb des Images. Neustart und Containerupdate
 laden vollständige gültige Modelle nicht erneut herunter. Nach erfolgreicher
 Installation funktionieren Start und Spracherkennung auch offline und read-only.
@@ -108,7 +108,7 @@ verwendetes Modell ist gesperrt. Den sicheren Aufruf für einen gestoppten Serve
 und die Folgen eines späteren Neustarts beschreibt
 [Ein Modell gezielt entfernen](docs/models.md#cli-und-sichere-entfernung).
 
-Release Notes: [v0.4.0](docs/releases/v0.4.0.md); [v0.3.1](docs/releases/v0.3.1.md); [v0.3.0](docs/releases/v0.3.0.md); [v0.2.0](docs/releases/v0.2.0.md) bleibt unverändert.
+Release Notes: [v0.5.0](docs/releases/v0.5.0.md); [v0.4.0](docs/releases/v0.4.0.md); [v0.3.1](docs/releases/v0.3.1.md); [v0.3.0](docs/releases/v0.3.0.md); [v0.2.0](docs/releases/v0.2.0.md) bleibt unverändert.
 
 ## Lokaler Docker-Build und Start
 
@@ -223,7 +223,7 @@ allgemeines WAV-Transkriptionswerkzeug. Testaufnahmen werden nicht mitgeliefert.
 Für **Kroko Classic** empfehlen wir auf dem **Intel N100, CPU only**:
 **Greedy decoding + 20-ms input chunks + 1 CPU thread** (`NUM_THREADS=1`).
 Classic und Community-64 verwenden weiterhin Greedy. Für das offizielle deutsche
-**Community-128** ist **Modified Beam Search mit 4 aktiven Pfaden** der
+**Community-128** ist **Modified Beam Search mit 4 aktiven Pfaden und Blank-Penalty 0.75** der
 qualitätsoptimierte Standarddecoder. Die Auswahl erfolgt automatisch nach
 Sprache und Modell; andere Sprachen und Custom-Modelle behalten Greedy.
 Es gibt keinen zusätzlichen Decoder-ENV-Schalter. Die Audioblockgröße bestimmt
@@ -309,7 +309,7 @@ begründen keine Partnerschaft, Unterstützung oder Empfehlung durch diese Proje
 ### Name und Upgrade-Kompatibilität
 
 Ab v0.3.1 heißt das öffentliche Repository und Image `kroko-stt-wyoming`.
-Neuinstallationen verwenden `ghcr.io/marco-taylor/kroko-stt-wyoming:0.4.0`
+Neuinstallationen verwenden `ghcr.io/marco-taylor/kroko-stt-wyoming:0.5.0`
 und den Appdata-Default `/mnt/user/appdata/kroko-stt-wyoming/models`.
 Die interne Ablage bleibt `/models/<sprache>/<modell>/`.
 

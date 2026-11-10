@@ -17,7 +17,7 @@ impl Decoder {
         Self {
             method: if beam4 { "modified_beam_search" } else { "greedy_search" },
             max_active_paths: 4,
-            blank_penalty: 0.0,
+            blank_penalty: if beam4 { 0.75 } else { 0.0 },
         }
     }
 
@@ -40,7 +40,7 @@ mod tests {
         decoder.apply(&mut config);
         assert_eq!(config.decoding_method.as_deref(), Some("modified_beam_search"));
         assert_eq!(config.max_active_paths, 4);
-        assert_eq!(config.blank_penalty, 0.0);
+        assert_eq!(config.blank_penalty, 0.75);
         assert!(!config.enable_endpoint);
     }
 
@@ -48,20 +48,25 @@ mod tests {
     fn classic_and_community64_keep_greedy() {
         for model in [Model::Classic, Model::Community64] {
             assert_eq!(Decoder::for_model(&model).method, "greedy_search");
+            assert_eq!(Decoder::for_model(&model).blank_penalty, 0.0);
         }
     }
 
     #[test]
     fn custom_model_names_do_not_enable_beam() {
         for name in ["custom/community-128", "custom/classic", "custom/nemotron"] {
-            assert_eq!(Decoder::for_model(&Model::parse(name).unwrap()).method, "greedy_search");
+            let decoder = Decoder::for_model(&Model::parse(name).unwrap());
+            assert_eq!(decoder.method, "greedy_search");
+            assert_eq!(decoder.blank_penalty, 0.0);
         }
     }
 
     #[test]
     fn unvalidated_languages_keep_greedy() {
         for model in [Model::Community64, Model::Community128] {
-            assert_eq!(Decoder::for_model(&model.for_language("en").unwrap()).method, "greedy_search");
+            let decoder = Decoder::for_model(&model.for_language("en").unwrap());
+            assert_eq!(decoder.method, "greedy_search");
+            assert_eq!(decoder.blank_penalty, 0.0);
         }
         assert_eq!(Decoder::for_model(&Model::Community128.for_language("de-DE").unwrap()).method, "modified_beam_search");
     }

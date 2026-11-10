@@ -31,7 +31,7 @@ FROM gcr.io/distroless/cc-debian12@sha256:777e96cf322c46bc32aca926c263624c4dc8d7
 ARG VCS_REF=uncommitted
 LABEL org.opencontainers.image.source="https://github.com/marco-taylor/kroko-stt-wyoming" \
       org.opencontainers.image.title="Kroko STT Wyoming" \
-      org.opencontainers.image.version="0.4.0" \
+      org.opencontainers.image.version="0.5.0" \
       org.opencontainers.image.revision=$VCS_REF
 COPY --from=build /build/target/release/kroko-wyoming /usr/local/bin/kroko-wyoming
 COPY --from=build /build/target/release/model-manager /usr/local/bin/model-manager
